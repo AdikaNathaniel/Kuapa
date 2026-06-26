@@ -1,0 +1,337 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: kuapa-postgres
+    environment:
+      POSTGRES_USER: kuapa
+      POSTGRES_PASSWORD: kuapa_pass
+      POSTGRES_DB: postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - kuapa-net
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U kuapa']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: kuapa-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - kuapa-net
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: kuapa-nats
+    ports:
+      - '4222:4222'
+      - '8222:8222'
+    networks:
+      - kuapa-net
+
+  # ─── API Gateway ──────────────────────────────────────────────────────────────
+  api-gateway:
+    build:
+      context: ./kuapa-backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: kuapa-api-gateway
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      AUTH_SERVICE_HOST: auth-service
+      AUTH_SERVICE_PORT: 4001
+      USER_SERVICE_HOST: user-service
+      USER_SERVICE_PORT: 4002
+      PRODUCT_SERVICE_HOST: product-service
+      PRODUCT_SERVICE_PORT: 4003
+      ORDER_SERVICE_HOST: order-service
+      ORDER_SERVICE_PORT: 4004
+      LOGISTICS_SERVICE_HOST: logistics-service
+      LOGISTICS_SERVICE_PORT: 4005
+      NOTIFICATION_SERVICE_HOST: notification-service
+      NOTIFICATION_SERVICE_PORT: 4006
+      CHAT_SERVICE_HOST: chat-service
+      CHAT_SERVICE_PORT: 4007
+      REVIEW_SERVICE_HOST: review-service
+      REVIEW_SERVICE_PORT: 4008
+      PAYMENT_SERVICE_HOST: payment-service
+      PAYMENT_SERVICE_PORT: 4009
+      JWT_SECRET: kuapa_jwt_secret_change_in_prod
+    depends_on:
+      - auth-service
+      - user-service
+      - product-service
+      - order-service
+      - logistics-service
+      - notification-service
+      - chat-service
+      - review-service
+      - payment-service
+    networks:
+      - kuapa-net
+    volumes:
+      - ./kuapa-backend/api-gateway/src:/app/src
+
+  # ─── Auth Service ─────────────────────────────────────────────────────────────
+  auth-service:
+    build:
+      context: ./kuapa-backend/auth-service
+      dockerfile: Dockerfile
+    container_name: kuapa-auth-service
+    ports:
+      - '3001:3001'
+    environment:
+      NODE_ENV: development
+      HTTP_PORT: 3001
+      TCP_PORT: 4001
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: kuapa
+      DB_PASS: kuapa_pass
+      DB_NAME: kuapa_auth
+      JWT_SECRET: kuapa_jwt_secret_change_in_prod
+      JWT_EXPIRY: 7d
+      JWT_REFRESH_SECRET: kuapa_refresh_secret_change_in_prod
+      JWT_REFRESH_EXPIRY: 30d
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - kuapa-net
+    volumes:
+      - ./kuapa-backend/auth-service/src:/app/src
+
+  # ─── User Service ─────────────────────────────────────────────────────────────
+  user-service:
+    build:
+      context: ./kuapa-backend/user-service
+      dockerfile: Dockerfile
+    container_name: kuapa-user-service
+    ports:
+      - '3002:3002'
+    environment:
+      NODE_ENV: development
+      HTTP_PORT: 3002
+      TCP_PORT: 4002
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: kuapa
+      DB_PASS: kuapa_pass
+      DB_NAME: kuapa_users
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - kuapa-net
+    volumes:
+      - ./kuapa-backend/user-service/src:/app/src
+
+  # ─── Product Service ──────────────────────────────────────────────────────────
+  product-service:
+    build:
+      context: ./kuapa-backend/product-service
+      dockerfile: Dockerfile
+    container_name: kuapa-product-service
+    ports:
+      - '3003:3003'
+    environment:
+      NODE_ENV: development
+      HTTP_PORT: 3003
+      TCP_PORT: 4003
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: kuapa
+      DB_PASS: kuapa_pass
+      DB_NAME: kuapa_products
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - kuapa-net
+    volumes:
+      - ./kuapa-backend/product-service/src:/app/src
+
+  # ─── Order Service ────────────────────────────────────────────────────────────
+  order-service:
+    build:
+      context: ./kuapa-backend/order-service
+      dockerfile: Dockerfile
+    container_name: kuapa-order-service
+    ports:
+      - '3004:3004'
+    environment:
+      NODE_ENV: development
+      HTTP_PORT: 3004
+      TCP_PORT: 4004
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: kuapa
+      DB_PASS: kuapa_pass
+      DB_NAME: kuapa_orders
+      PRODUCT_SERVICE_HOST: product-service
+      PRODUCT_SERVICE_PORT: 4003
+      NOTIFICATION_SERVICE_HOST: notification-service
+      NOTIFICATION_SERVICE_PORT: 4006
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - kuapa-net
+    volumes:
+      - ./kuapa-backend/order-service/src:/app/src
+
+  # ─── Logistics Service ────────────────────────────────────────────────────────
+  logistics-service:
+    build:
+      context: ./kuapa-backend/logistics-service
+      dockerfile: Dockerfile
+    container_name: kuapa-logistics-service
+    ports:
+      - '3005:3005'
+    environment:
+      NODE_ENV: development
+      HTTP_PORT: 3005
+      TCP_PORT: 4005
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: kuapa
+      DB_PASS: kuapa_pass
+      DB_NAME: kuapa_logistics
+      NOTIFICATION_SERVICE_HOST: notification-service
+      NOTIFICATION_SERVICE_PORT: 4006
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - kuapa-net
+    volumes:
+      - ./kuapa-backend/logistics-service/src:/app/src
+
+  # ─── Notification Service ─────────────────────────────────────────────────────
+  notification-service:
+    build:
+      context: ./kuapa-backend/notification-service
+      dockerfile: Dockerfile
+    container_name: kuapa-notification-service
+    ports:
+      - '3006:3006'
+    environment:
+      NODE_ENV: development
+      HTTP_PORT: 3006
+      TCP_PORT: 4006
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: kuapa
+      DB_PASS: kuapa_pass
+      DB_NAME: kuapa_notifications
+      FCM_SERVER_KEY: your_fcm_server_key_here
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - kuapa-net
+    volumes:
+      - ./kuapa-backend/notification-service/src:/app/src
+
+  # ─── Chat Service ─────────────────────────────────────────────────────────────
+  chat-service:
+    build:
+      context: ./kuapa-backend/chat-service
+      dockerfile: Dockerfile
+    container_name: kuapa-chat-service
+    ports:
+      - '3007:3007'
+    environment:
+      NODE_ENV: development
+      HTTP_PORT: 3007
+      TCP_PORT: 4007
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: kuapa
+      DB_PASS: kuapa_pass
+      DB_NAME: kuapa_chat
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - kuapa-net
+    volumes:
+      - ./kuapa-backend/chat-service/src:/app/src
+
+  # ─── Review Service ───────────────────────────────────────────────────────────
+  review-service:
+    build:
+      context: ./kuapa-backend/review-service
+      dockerfile: Dockerfile
+    container_name: kuapa-review-service
+    ports:
+      - '3008:3008'
+    environment:
+      NODE_ENV: development
+      HTTP_PORT: 3008
+      TCP_PORT: 4008
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: kuapa
+      DB_PASS: kuapa_pass
+      DB_NAME: kuapa_reviews
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - kuapa-net
+    volumes:
+      - ./kuapa-backend/review-service/src:/app/src
+
+  # ─── Payment Service ──────────────────────────────────────────────────────────
+  payment-service:
+    build:
+      context: ./kuapa-backend/payment-service
+      dockerfile: Dockerfile
+    container_name: kuapa-payment-service
+    ports:
+      - '3009:3009'
+    environment:
+      NODE_ENV: development
+      HTTP_PORT: 3009
+      TCP_PORT: 4009
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: kuapa
+      DB_PASS: kuapa_pass
+      DB_NAME: kuapa_payments
+      PAYSTACK_SECRET_KEY: your_paystack_secret_key_here
+      PAYSTACK_BASE_URL: https://api.paystack.co
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - kuapa-net
+    volumes:
+      - ./kuapa-backend/payment-service/src:/app/src
+
+networks:
+  kuapa-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
