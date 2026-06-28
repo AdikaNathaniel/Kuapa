@@ -85,6 +85,17 @@ export class UsersController {
     return this.usersService.getFarmerProfile(data.userId);
   }
 
+  @MessagePattern('USER_UPDATE_FARMER_PROFILE')
+  tcpUpdateFarmer(@Payload() data: { userId: string; [key: string]: any }) {
+    const { userId, ...rest } = data;
+    return this.usersService.updateFarmerProfile(userId, rest);
+  }
+
+  @MessagePattern('USER_GET_FARMERS')
+  tcpGetFarmers(@Payload() data: { region?: string }) {
+    return this.usersService.getFarmers(data.region);
+  }
+
   @MessagePattern('USER_CREATE_BUYER_PROFILE')
   tcpCreateBuyer(@Payload() dto: CreateBuyerProfileDto) {
     return this.usersService.createBuyerProfile(dto);
@@ -95,6 +106,12 @@ export class UsersController {
     return this.usersService.getBuyerProfile(data.userId);
   }
 
+  @MessagePattern('USER_UPDATE_BUYER_PROFILE')
+  tcpUpdateBuyer(@Payload() data: { userId: string; [key: string]: any }) {
+    const { userId, ...rest } = data;
+    return this.usersService.updateBuyerProfile(userId, rest);
+  }
+
   @MessagePattern('USER_CREATE_TRANSPORTER_PROFILE')
   tcpCreateTransporter(@Payload() dto: CreateTransporterProfileDto) {
     return this.usersService.createTransporterProfile(dto);
@@ -103,6 +120,12 @@ export class UsersController {
   @MessagePattern('USER_GET_TRANSPORTER_PROFILE')
   tcpGetTransporter(@Payload() data: { userId: string }) {
     return this.usersService.getTransporterProfile(data.userId);
+  }
+
+  @MessagePattern('USER_UPDATE_TRANSPORTER_PROFILE')
+  tcpUpdateTransporter(@Payload() data: { userId: string; [key: string]: any }) {
+    const { userId, ...rest } = data;
+    return this.usersService.updateTransporterProfile(userId, rest);
   }
 
   @MessagePattern('USER_GET_AVAILABLE_TRANSPORTERS')
@@ -118,6 +141,11 @@ export class UsersController {
   @MessagePattern('USER_UPDATE_TRANSPORTER_AVAILABILITY')
   tcpUpdateAvailability(@Payload() data: { userId: string; isAvailable: boolean }) {
     return this.usersService.updateTransporterAvailability(data.userId, data.isAvailable);
+  }
+
+  @MessagePattern('USER_GET_NEARBY_TRANSPORTERS')
+  tcpGetNearby(@Payload() data: { lat: number; lng: number; radiusKm?: number }) {
+    return this.usersService.getNearbyTransporters(data.lat, data.lng, data.radiusKm ?? 100);
   }
 
   @MessagePattern('USER_UPDATE_RATING')

@@ -28,8 +28,9 @@ dependencies:
   image_picker: ^1.1.2
   cached_network_image: ^3.3.1
 
-  # Location
+  # Location + Maps
   geolocator: ^11.0.0
+  google_maps_flutter: ^2.7.0
 
   # WebSocket (for chat)
   socket_io_client: ^2.0.3+1

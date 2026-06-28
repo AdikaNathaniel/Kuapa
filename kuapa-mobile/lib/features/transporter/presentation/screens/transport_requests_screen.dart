@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -55,7 +57,7 @@ class _TransportRequestsScreenState extends ConsumerState<TransportRequestsScree
         controller: _tabs,
         children: [
           _AvailableTab(onAccepted: () => ref.refresh(_availableRequestsProvider)),
-          _AssignmentsTab(),
+          const _AssignmentsTab(),
         ],
       ),
     );
@@ -142,42 +144,118 @@ class _AssignmentsTab extends ConsumerWidget {
   }
 }
 
-class _RequestCard extends StatelessWidget {
+String _fmtSchedule(String? iso) {
+  if (iso == null) return '';
+  try {
+    final dt = DateTime.parse(iso).toLocal();
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    return '${days[dt.weekday - 1]} ${dt.day} ${months[dt.month - 1]} · $h:$m';
+  } catch (_) {
+    return iso;
+  }
+}
+
+class _RequestCard extends StatefulWidget {
   final Map<String, dynamic> request;
   final bool showAccept;
   final VoidCallback onAccepted;
 
   const _RequestCard({required this.request, required this.showAccept, required this.onAccepted});
 
-  Color _statusColor(String status) {
-    switch (status) {
-      case 'PENDING': return AppTheme.primary;
-      case 'MATCHED': return AppTheme.primaryLight;
-      case 'ACCEPTED': return AppTheme.primary;
-      case 'PICKED_UP': return AppTheme.primaryLight;
-      case 'IN_TRANSIT': return AppTheme.primary;
-      case 'DELIVERED': return AppTheme.primaryLight;
-      case 'CANCELLED': return Colors.red;
-      default: return Colors.grey;
+  @override
+  State<_RequestCard> createState() => _RequestCardState();
+}
+
+class _RequestCardState extends State<_RequestCard> {
+  Timer? _locationTimer;
+  bool _sharingLocation = false;
+  late String _currentStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentStatus = widget.request['status']?.toString() ?? 'PENDING';
+    if (_currentStatus == 'PICKED_UP' || _currentStatus == 'IN_TRANSIT') {
+      _startLocationTimer();
     }
   }
 
-  Future<void> _accept(BuildContext context, String id) async {
+  @override
+  void dispose() {
+    _locationTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startLocationTimer() {
+    _locationTimer?.cancel();
+    if (mounted) setState(() => _sharingLocation = true);
+    _pushLocation();
+    _locationTimer = Timer.periodic(const Duration(seconds: 30), (_) => _pushLocation());
+  }
+
+  void _stopLocationTimer() {
+    _locationTimer?.cancel();
+    _locationTimer = null;
+    if (mounted) setState(() => _sharingLocation = false);
+  }
+
+  Future<void> _pushLocation() async {
+    try {
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) perm = await Geolocator.requestPermission();
+      if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) return;
+      final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      await ApiClient.instance.patch(
+        '${ApiConstants.transportRequests}/${widget.request['id']}/location',
+        data: {'lat': pos.latitude, 'lng': pos.longitude},
+      );
+    } catch (_) {
+      // Best-effort — silent fail
+    }
+  }
+
+  Color _statusColor(String status) => switch (status) {
+        'PENDING'    => AppTheme.primary,
+        'MATCHED'    => AppTheme.primaryLight,
+        'ACCEPTED'   => AppTheme.primary,
+        'PICKED_UP'  => AppTheme.primaryLight,
+        'IN_TRANSIT' => AppTheme.primary,
+        'DELIVERED'  => Colors.green,
+        'CANCELLED'  => Colors.red,
+        _            => Colors.grey,
+      };
+
+  Future<void> _accept(String id) async {
     await ApiClient.instance.post('${ApiConstants.transportRequests}/$id/accept', data: {});
-    onAccepted();
-    if (context.mounted) {
+    widget.onAccepted();
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Job accepted!'), backgroundColor: AppTheme.primary),
       );
     }
   }
 
-  Future<void> _updateStatus(BuildContext context, String id, String status) async {
-    await ApiClient.instance.patch('${ApiConstants.transportRequests}/$id/status', data: {'status': status});
-    onAccepted();
-    if (context.mounted) {
+  Future<void> _updateStatus(String id, String newStatus) async {
+    await ApiClient.instance.patch(
+      '${ApiConstants.transportRequests}/$id/status',
+      data: {'status': newStatus},
+    );
+    if (mounted) setState(() => _currentStatus = newStatus);
+    if (newStatus == 'PICKED_UP' || newStatus == 'IN_TRANSIT') {
+      _startLocationTimer();
+    } else {
+      _stopLocationTimer();
+    }
+    widget.onAccepted();
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Status updated to ${status.replaceAll("_", " ")}'), backgroundColor: AppTheme.primary),
+        SnackBar(
+          content: Text('Status updated to ${newStatus.replaceAll("_", " ")}'),
+          backgroundColor: AppTheme.primary,
+        ),
       );
     }
   }
@@ -227,16 +305,46 @@ class _RequestCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('From: ${request['pickupRegion'] ?? 'Unknown'}',
+                      Text('From: ${request['pickupAddress'] ?? 'Unknown'}',
                           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                       const SizedBox(height: 10),
-                      Text('To: ${request['dropoffRegion'] ?? 'Unknown'}',
+                      Text('To: ${request['deliveryAddress'] ?? 'Unknown'}',
                           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                     ],
                   ),
                 ),
               ],
             ),
+
+            if (request['cargoDescription'] != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.inventory_2_outlined, size: 14, color: AppTheme.textSecondary),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(request['cargoDescription'],
+                        style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ),
+                  if (request['weightKg'] != null)
+                    Text('${request['weightKg']} kg',
+                        style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                ],
+              ),
+            ],
+
+            if (request['requesterName'] != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.person_outline, size: 14, color: AppTheme.textSecondary),
+                  const SizedBox(width: 6),
+                  Text('Posted by: ${request['requesterName']}',
+                      style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                ],
+              ),
+            ],
 
             if (estimatedCost != null) ...[
               const SizedBox(height: 10),

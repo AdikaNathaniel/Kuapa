@@ -70,6 +70,12 @@ export class TransportRequest {
   @Prop()
   region: string;
 
+  @Prop({ type: Date })
+  scheduledPickupAt: Date;
+
+  @Prop()
+  scheduleNote: string;
+
   @Prop({ type: TransportAssignmentSchema })
   assignment: TransportAssignment;
 }

@@ -16,6 +16,11 @@ class FarmerDashboard extends ConsumerWidget {
         title: const Text('Kuapa'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.chat_bubble_outline),
+            tooltip: 'Messages',
+            onPressed: () => context.push('/chat'),
+          ),
+          IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () {},
           ),
@@ -96,7 +101,14 @@ class FarmerDashboard extends ConsumerWidget {
                   label: 'Transport',
                   subtitle: 'Request delivery',
                   color: AppTheme.primary,
-                  onTap: () {},
+                  onTap: () => context.push('/farmer/transport'),
+                ),
+                _ActionCard(
+                  icon: Icons.map_outlined,
+                  label: 'Find Transporters',
+                  subtitle: 'Nearby on map',
+                  color: AppTheme.primaryLight,
+                  onTap: () => context.push('/logistics/nearby'),
                 ),
               ],
             ),

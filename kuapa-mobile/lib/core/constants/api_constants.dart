@@ -13,6 +13,8 @@ class ApiConstants {
   static const String transporterProfile = '/users/transporter/profile';
   static const String farmers = '/users/farmers';
   static const String availableTransporters = '/users/transporters/available';
+  static const String nearbyTransporters = '/users/transporters/nearby';
+  static const String transporterLocation = '/users/transporter/location';
 
   // Products
   static const String products = '/products';
@@ -46,6 +48,9 @@ class ApiConstants {
   static const String initiatePayment = '/payments/initiate';
   static const String paymentHistory = '/payments/history';
 
-  // WebSocket
-  static const String wsUrl = 'wss://kuapa-app.fly.dev';
+  // Chat REST
+  static const String chatMessages = '/chat/conversations';
+
+  // WebSocket — connects directly to chat-service (not api-gateway)
+  static const String wsUrl = 'https://kuapa-chat.fly.dev';
 }

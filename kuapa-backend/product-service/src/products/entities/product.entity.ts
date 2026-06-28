@@ -8,6 +8,7 @@ export enum ProductUnit {
   BUNCH = 'BUNCH',
   PIECE = 'PIECE',
   BASKET = 'BASKET',
+  TUBER = 'TUBER',
 }
 
 @Schema({ timestamps: true, toJSON: { virtuals: true, versionKey: false } })

@@ -16,6 +16,11 @@ export class CreateProductDto {
   @IsString()
   categoryId?: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  categoryName?: string;
+
   @ApiProperty()
   @IsString()
   name: string;

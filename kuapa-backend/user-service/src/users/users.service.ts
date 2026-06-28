@@ -1,6 +1,16 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 import { FarmerProfile, FarmerProfileDocument } from './entities/farmer-profile.entity';
 import { BuyerProfile, BuyerProfileDocument } from './entities/buyer-profile.entity';
 import { TransporterProfile, TransporterProfileDocument } from './entities/transporter-profile.entity';
@@ -83,6 +93,20 @@ export class UsersService {
     const filter: any = { isAvailable: true };
     if (region) filter.region = new RegExp(region, 'i');
     return this.transporterModel.find(filter).sort({ rating: -1 });
+  }
+
+  async getNearbyTransporters(lat: number, lng: number, radiusKm = 100) {
+    const all = await this.transporterModel.find({ isAvailable: true });
+    return all
+      .map(t => {
+        const distanceKm =
+          t.currentLat != null && t.currentLng != null
+            ? parseFloat(haversineKm(lat, lng, t.currentLat, t.currentLng).toFixed(1))
+            : null;
+        return { ...t.toJSON(), distanceKm };
+      })
+      .filter(t => t.distanceKm === null || t.distanceKm <= radiusKm)
+      .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999));
   }
 
   async updateTransporterLocation(userId: string, lat: number, lng: number) {

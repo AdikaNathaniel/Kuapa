@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -113,16 +114,16 @@ class TransporterDashboard extends ConsumerWidget {
                 _ActionCard(
                   icon: Icons.location_on_outlined,
                   label: 'Update Location',
-                  subtitle: 'Share your position',
+                  subtitle: 'Share your GPS',
                   color: AppTheme.primary,
                   onTap: () => _updateLocation(context, ref),
                 ),
                 _ActionCard(
-                  icon: Icons.account_circle_outlined,
-                  label: 'My Profile',
-                  subtitle: 'Vehicle & settings',
-                  color: AppTheme.primary,
-                  onTap: () {},
+                  icon: Icons.map_outlined,
+                  label: 'Jobs on Map',
+                  subtitle: 'See requests nearby',
+                  color: AppTheme.primaryLight,
+                  onTap: () => context.push('/logistics/nearby'),
                 ),
               ],
             ),
@@ -146,15 +147,47 @@ class TransporterDashboard extends ConsumerWidget {
   }
 
   Future<void> _updateLocation(BuildContext context, WidgetRef ref) async {
-    // In production: use geolocator to get real coordinates
-    await ApiClient.instance.patch('${ApiConstants.transporterProfile}/location', data: {
-      'latitude': 5.6037,
-      'longitude': -0.1870,
-    });
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location permission denied'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Location updated'), backgroundColor: AppTheme.primary),
+        const SnackBar(content: Text('Getting your GPS location…'), backgroundColor: AppTheme.primary),
       );
+    }
+
+    try {
+      final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      await ApiClient.instance.patch(ApiConstants.transporterLocation, data: {
+        'lat': pos.latitude,
+        'lng': pos.longitude,
+      });
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Location updated — ${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)}',
+            ),
+            backgroundColor: AppTheme.primary,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not get location: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 }

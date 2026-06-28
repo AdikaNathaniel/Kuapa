@@ -98,11 +98,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (!mounted) return;
     final user = ref.read(authUserProvider).valueOrNull;
     if (user != null) {
-      switch (user.role.name) {
-        case 'FARMER': context.go('/farmer/dashboard');
-        case 'BUYER': context.go('/buyer/dashboard');
-        case 'TRANSPORTER': context.go('/transporter/dashboard');
-      }
+      context.go('/profile-setup');
     }
   }
 

@@ -24,7 +24,17 @@ class BuyerDashboard extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Kuapa'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.chat_bubble_outline),
+            tooltip: 'Messages',
+            onPressed: () => context.push('/chat'),
+          ),
           IconButton(icon: const Icon(Icons.shopping_basket_outlined), onPressed: () => context.push('/buyer/orders')),
+          IconButton(
+            icon: const Icon(Icons.local_shipping_outlined),
+            tooltip: 'My Deliveries',
+            onPressed: () => context.push('/buyer/deliveries'),
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {

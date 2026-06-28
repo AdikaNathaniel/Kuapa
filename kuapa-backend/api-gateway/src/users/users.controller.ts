@@ -103,4 +103,14 @@ export class UsersGatewayController {
   getTransporters(@Query('region') region?: string) {
     return firstValueFrom(this.userClient.send('USER_GET_AVAILABLE_TRANSPORTERS', { region }));
   }
+
+  @Get('transporters/nearby')
+  @ApiOperation({ summary: 'Get available transporters sorted by distance from a point' })
+  getNearbyTransporters(@Query() q: { lat: string; lng: string; radiusKm?: string }) {
+    return firstValueFrom(this.userClient.send('USER_GET_NEARBY_TRANSPORTERS', {
+      lat: +q.lat,
+      lng: +q.lng,
+      radiusKm: q.radiusKm ? +q.radiusKm : 100,
+    }));
+  }
 }
