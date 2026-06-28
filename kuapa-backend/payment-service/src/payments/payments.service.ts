@@ -1,15 +1,14 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { ClientProxy } from '@nestjs/microservices';
-import { Payment, PaymentMethod, PaymentStatus } from './entities/payment.entity';
+import { Payment, PaymentDocument, PaymentMethod, PaymentStatus } from './entities/payment.entity';
 import { v4 as uuidv4 } from 'uuid';
-import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class PaymentsService {
   constructor(
-    @InjectRepository(Payment) private paymentRepo: Repository<Payment>,
+    @InjectModel(Payment.name) private paymentModel: Model<PaymentDocument>,
     @Inject('ORDER_SERVICE') private orderClient: ClientProxy,
   ) {}
 
@@ -21,30 +20,19 @@ export class PaymentsService {
     phoneNumber?: string;
   }) {
     const transactionRef = `AGRO-${uuidv4().split('-')[0].toUpperCase()}`;
+    const saved = await new this.paymentModel({ ...data, transactionRef, status: PaymentStatus.PROCESSING }).save() as PaymentDocument;
 
-    const payment = this.paymentRepo.create({
-      ...data,
-      transactionRef,
-      status: PaymentStatus.PROCESSING,
-    });
-    const saved = await this.paymentRepo.save(payment);
-
-    // In production: call Paystack / Hub Mobile Money API
-    // For MVP: simulate successful payment after a delay
     setTimeout(() => this.simulatePaymentSuccess(saved.id), 3000);
 
-    return { ...saved, message: 'Payment initiated. You will receive a prompt on your phone.' };
+    return { ...saved.toJSON(), message: 'Payment initiated. You will receive a prompt on your phone.' };
   }
 
   private async simulatePaymentSuccess(paymentId: string) {
-    const payment = await this.paymentRepo.findOne({ where: { id: paymentId } });
+    const payment = await this.paymentModel.findById(paymentId);
     if (!payment) return;
 
     const providerRef = `PAY-${uuidv4().split('-')[0].toUpperCase()}`;
-    await this.paymentRepo.update(paymentId, {
-      status: PaymentStatus.COMPLETED,
-      providerRef,
-    });
+    await this.paymentModel.findByIdAndUpdate(paymentId, { status: PaymentStatus.COMPLETED, providerRef });
 
     this.orderClient.emit('ORDER_UPDATE_PAYMENT', {
       id: payment.orderId,
@@ -54,31 +42,28 @@ export class PaymentsService {
   }
 
   async getPaymentStatus(id: string) {
-    const payment = await this.paymentRepo.findOne({ where: { id } });
+    const payment = await this.paymentModel.findById(id);
     if (!payment) throw new NotFoundException('Payment not found');
     return payment;
   }
 
   async getByRef(ref: string) {
-    return this.paymentRepo.findOne({ where: { transactionRef: ref } });
+    return this.paymentModel.findOne({ transactionRef: ref });
   }
 
   async getUserPayments(payerId: string) {
-    return this.paymentRepo.find({
-      where: { payerId },
-      order: { createdAt: 'DESC' },
-    });
+    return this.paymentModel.find({ payerId }).sort({ createdAt: -1 });
   }
 
   async getOrderPayments(orderId: string) {
-    return this.paymentRepo.find({ where: { orderId } });
+    return this.paymentModel.find({ orderId });
   }
 
   async handleWebhook(body: any) {
     if (body.event === 'charge.success') {
       const payment = await this.getByRef(body.data?.reference);
       if (payment) {
-        await this.paymentRepo.update(payment.id, {
+        await this.paymentModel.findByIdAndUpdate(payment.id, {
           status: PaymentStatus.COMPLETED,
           providerRef: body.data?.id?.toString(),
         });

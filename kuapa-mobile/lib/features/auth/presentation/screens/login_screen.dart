@@ -15,13 +15,12 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _usePhone = false;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -29,8 +28,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
     await ref.read(authUserProvider.notifier).login(
-          email: _usePhone ? null : _emailController.text.trim(),
-          phone: _usePhone ? _emailController.text.trim() : null,
+          phone: _phoneController.text.trim(),
           password: _passwordController.text,
         );
 
@@ -43,6 +41,52 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         case 'TRANSPORTER': context.go('/transporter/dashboard');
       }
     }
+  }
+
+  Widget _buildLogo() {
+    return Column(
+      children: [
+        Container(
+          width: 110,
+          height: 110,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primary.withValues(alpha: 0.25),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: Image.asset(
+              'assets/images/kuapa_logo.jpg',
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Kuapa',
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.primary,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Farm to Table, Direct',
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.grey.shade500,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -58,46 +102,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const SizedBox(height: 32),
+                Center(child: _buildLogo()),
                 const SizedBox(height: 40),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: AppTheme.primary, borderRadius: BorderRadius.circular(12)),
-                      child: const Icon(Icons.agriculture, color: Colors.white, size: 28),
-                    ),
-                    const SizedBox(width: 12),
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Kuapa', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.primary)),
-                        Text('Farm to Table, Direct', style: TextStyle(color: AppTheme.textSecondary)),
-                      ],
-                    ),
-                  ],
+                const Center(
+                  child: Text(
+                    'Welcome back',
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  ),
                 ),
-                const SizedBox(height: 48),
-                const Text('Welcome back', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                const Text('Sign in to your account', style: TextStyle(color: AppTheme.textSecondary)),
                 const SizedBox(height: 32),
 
-                Row(
-                  children: [
-                    ChoiceChip(label: const Text('Email'), selected: !_usePhone, onSelected: (_) => setState(() => _usePhone = false)),
-                    const SizedBox(width: 8),
-                    ChoiceChip(label: const Text('Phone'), selected: _usePhone, onSelected: (_) => setState(() => _usePhone = true)),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
                 KuapaTextField(
-                  label: _usePhone ? 'Phone Number' : 'Email Address',
-                  controller: _emailController,
-                  keyboardType: _usePhone ? TextInputType.phone : TextInputType.emailAddress,
-                  prefixIcon: _usePhone ? Icons.phone : Icons.email_outlined,
+                  label: 'Phone Number',
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  prefixIcon: Icons.phone,
                   validator: (v) => v == null || v.isEmpty ? 'Required' : null,
                 ),
                 const SizedBox(height: 16),

@@ -1,19 +1,17 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
-@Entity('fcm_tokens')
+@Schema({ timestamps: true, toJSON: { virtuals: true, versionKey: false } })
 export class FcmToken {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column()
+  @Prop({ required: true })
   userId: string;
 
-  @Column({ unique: true })
+  @Prop({ unique: true, required: true })
   token: string;
 
-  @Column({ default: 'ANDROID' })
+  @Prop({ default: 'ANDROID' })
   deviceType: string;
-
-  @CreateDateColumn()
-  createdAt: Date;
 }
+
+export type FcmTokenDocument = FcmToken & Document & { id: string };
+export const FcmTokenSchema = SchemaFactory.createForClass(FcmToken);

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color primary = Color(0xFF2E7D32);      // Deep green
+  static const Color primary = Color(0xFF2E7D32);
   static const Color primaryLight = Color(0xFF4CAF50);
-  static const Color secondary = Color(0xFFFFA000);     // Amber — harvest
-  static const Color background = Color(0xFFF5F5F5);
+  static const Color secondary = Color(0xFF388E3C);
+  static const Color background = Colors.white;
   static const Color surface = Colors.white;
   static const Color error = Color(0xFFD32F2F);
   static const Color textPrimary = Color(0xFF212121);
@@ -15,7 +15,7 @@ class AppTheme {
         colorScheme: ColorScheme.fromSeed(
           seedColor: primary,
           primary: primary,
-          secondary: secondary,
+          secondary: const Color(0xFF388E3C),
           surface: surface,
           error: error,
         ),

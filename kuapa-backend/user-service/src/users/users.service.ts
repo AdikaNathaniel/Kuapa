@@ -1,9 +1,9 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { FarmerProfile } from './entities/farmer-profile.entity';
-import { BuyerProfile } from './entities/buyer-profile.entity';
-import { TransporterProfile } from './entities/transporter-profile.entity';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { FarmerProfile, FarmerProfileDocument } from './entities/farmer-profile.entity';
+import { BuyerProfile, BuyerProfileDocument } from './entities/buyer-profile.entity';
+import { TransporterProfile, TransporterProfileDocument } from './entities/transporter-profile.entity';
 import {
   CreateBuyerProfileDto,
   CreateFarmerProfileDto,
@@ -13,120 +13,102 @@ import {
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectRepository(FarmerProfile) private farmerRepo: Repository<FarmerProfile>,
-    @InjectRepository(BuyerProfile) private buyerRepo: Repository<BuyerProfile>,
-    @InjectRepository(TransporterProfile) private transporterRepo: Repository<TransporterProfile>,
+    @InjectModel(FarmerProfile.name) private farmerModel: Model<FarmerProfileDocument>,
+    @InjectModel(BuyerProfile.name) private buyerModel: Model<BuyerProfileDocument>,
+    @InjectModel(TransporterProfile.name) private transporterModel: Model<TransporterProfileDocument>,
   ) {}
 
-  // ─── Farmer ───────────────────────────────────────────────────────────────
-
   async createFarmerProfile(dto: CreateFarmerProfileDto) {
-    const existing = await this.farmerRepo.findOne({ where: { userId: dto.userId } });
+    const existing = await this.farmerModel.findOne({ userId: dto.userId });
     if (existing) throw new ConflictException('Farmer profile already exists');
-    const profile = this.farmerRepo.create(dto);
-    return this.farmerRepo.save(profile);
+    return new this.farmerModel(dto).save();
   }
 
   async getFarmerProfile(userId: string) {
-    const profile = await this.farmerRepo.findOne({ where: { userId } });
+    const profile = await this.farmerModel.findOne({ userId });
     if (!profile) throw new NotFoundException('Farmer profile not found');
     return profile;
   }
 
   async getFarmerById(id: string) {
-    return this.farmerRepo.findOne({ where: { id } });
+    return this.farmerModel.findById(id);
   }
 
   async updateFarmerProfile(userId: string, data: Partial<FarmerProfile>) {
-    await this.farmerRepo.update({ userId }, data);
+    await this.farmerModel.findOneAndUpdate({ userId }, data);
     return this.getFarmerProfile(userId);
   }
 
   async getFarmers(region?: string) {
-    const query = this.farmerRepo.createQueryBuilder('f');
-    if (region) query.where('f.region ILIKE :region', { region: `%${region}%` });
-    return query.orderBy('f.rating', 'DESC').getMany();
+    const filter: any = {};
+    if (region) filter.region = new RegExp(region, 'i');
+    return this.farmerModel.find(filter).sort({ rating: -1 });
   }
 
-  // ─── Buyer ────────────────────────────────────────────────────────────────
-
   async createBuyerProfile(dto: CreateBuyerProfileDto) {
-    const existing = await this.buyerRepo.findOne({ where: { userId: dto.userId } });
+    const existing = await this.buyerModel.findOne({ userId: dto.userId });
     if (existing) throw new ConflictException('Buyer profile already exists');
-    const profile = this.buyerRepo.create(dto);
-    return this.buyerRepo.save(profile);
+    return new this.buyerModel(dto).save();
   }
 
   async getBuyerProfile(userId: string) {
-    const profile = await this.buyerRepo.findOne({ where: { userId } });
+    const profile = await this.buyerModel.findOne({ userId });
     if (!profile) throw new NotFoundException('Buyer profile not found');
     return profile;
   }
 
   async updateBuyerProfile(userId: string, data: Partial<BuyerProfile>) {
-    await this.buyerRepo.update({ userId }, data);
+    await this.buyerModel.findOneAndUpdate({ userId }, data);
     return this.getBuyerProfile(userId);
   }
 
-  // ─── Transporter ──────────────────────────────────────────────────────────
-
   async createTransporterProfile(dto: CreateTransporterProfileDto) {
-    const existing = await this.transporterRepo.findOne({ where: { userId: dto.userId } });
+    const existing = await this.transporterModel.findOne({ userId: dto.userId });
     if (existing) throw new ConflictException('Transporter profile already exists');
-    const profile = this.transporterRepo.create(dto);
-    return this.transporterRepo.save(profile);
+    return new this.transporterModel(dto).save();
   }
 
   async getTransporterProfile(userId: string) {
-    const profile = await this.transporterRepo.findOne({ where: { userId } });
+    const profile = await this.transporterModel.findOne({ userId });
     if (!profile) throw new NotFoundException('Transporter profile not found');
     return profile;
   }
 
   async updateTransporterProfile(userId: string, data: Partial<TransporterProfile>) {
-    await this.transporterRepo.update({ userId }, data);
+    await this.transporterModel.findOneAndUpdate({ userId }, data);
     return this.getTransporterProfile(userId);
   }
 
   async getAvailableTransporters(region?: string) {
-    const query = this.transporterRepo.createQueryBuilder('t').where('t.isAvailable = true');
-    if (region) query.andWhere('t.region ILIKE :region', { region: `%${region}%` });
-    return query.orderBy('t.rating', 'DESC').getMany();
+    const filter: any = { isAvailable: true };
+    if (region) filter.region = new RegExp(region, 'i');
+    return this.transporterModel.find(filter).sort({ rating: -1 });
   }
 
   async updateTransporterLocation(userId: string, lat: number, lng: number) {
-    await this.transporterRepo.update({ userId }, { currentLat: lat, currentLng: lng });
+    await this.transporterModel.findOneAndUpdate({ userId }, { currentLat: lat, currentLng: lng });
     return { success: true };
   }
 
   async updateTransporterAvailability(userId: string, isAvailable: boolean) {
-    await this.transporterRepo.update({ userId }, { isAvailable });
+    await this.transporterModel.findOneAndUpdate({ userId }, { isAvailable });
     return { success: true };
   }
 
   async updateRating(userId: string, role: string, newRating: number) {
-    if (role === 'FARMER') {
-      const profile = await this.farmerRepo.findOne({ where: { userId } });
+    const updateAvg = async (model: Model<any>) => {
+      const profile = await model.findOne({ userId });
       if (profile) {
         const total = profile.totalReviews + 1;
-        const avg = (profile.rating * profile.totalReviews + newRating) / total;
-        await this.farmerRepo.update({ userId }, { rating: parseFloat(avg.toFixed(2)), totalReviews: total });
+        const avg = parseFloat(((profile.rating * profile.totalReviews + newRating) / total).toFixed(2));
+        await model.findOneAndUpdate({ userId }, { rating: avg, totalReviews: total });
       }
-    } else if (role === 'BUYER') {
-      const profile = await this.buyerRepo.findOne({ where: { userId } });
-      if (profile) {
-        const total = profile.totalReviews + 1;
-        const avg = (profile.rating * profile.totalReviews + newRating) / total;
-        await this.buyerRepo.update({ userId }, { rating: parseFloat(avg.toFixed(2)), totalReviews: total });
-      }
-    } else if (role === 'TRANSPORTER') {
-      const profile = await this.transporterRepo.findOne({ where: { userId } });
-      if (profile) {
-        const total = profile.totalReviews + 1;
-        const avg = (profile.rating * profile.totalReviews + newRating) / total;
-        await this.transporterRepo.update({ userId }, { rating: parseFloat(avg.toFixed(2)), totalReviews: total });
-      }
-    }
+    };
+
+    if (role === 'FARMER') await updateAvg(this.farmerModel);
+    else if (role === 'BUYER') await updateAvg(this.buyerModel);
+    else if (role === 'TRANSPORTER') await updateAvg(this.transporterModel);
+
     return { success: true };
   }
 }

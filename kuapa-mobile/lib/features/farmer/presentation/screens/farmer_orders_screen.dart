@@ -54,11 +54,11 @@ class _OrderCard extends StatelessWidget {
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'PENDING': return Colors.orange;
-      case 'CONFIRMED': return Colors.blue;
-      case 'PROCESSING': return Colors.indigo;
-      case 'READY_FOR_PICKUP': return Colors.teal;
-      case 'DELIVERED': return Colors.green;
+      case 'PENDING': return AppTheme.primary;
+      case 'CONFIRMED': return AppTheme.primaryLight;
+      case 'PROCESSING': return AppTheme.primary;
+      case 'READY_FOR_PICKUP': return AppTheme.primaryLight;
+      case 'DELIVERED': return AppTheme.primaryLight;
       case 'CANCELLED': return Colors.red;
       default: return Colors.grey;
     }

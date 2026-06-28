@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { MongooseModule } from '@nestjs/mongoose';
 import { LogisticsController } from './logistics.controller';
 import { LogisticsService } from './logistics.service';
-import { TransportRequest } from './entities/transport-request.entity';
-import { TransportAssignment } from './entities/transport-assignment.entity';
+import { TransportRequest, TransportRequestSchema } from './entities/transport-request.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([TransportRequest, TransportAssignment])],
+  imports: [
+    MongooseModule.forFeature([{ name: TransportRequest.name, schema: TransportRequestSchema }]),
+  ],
   controllers: [LogisticsController],
   providers: [LogisticsService],
 })

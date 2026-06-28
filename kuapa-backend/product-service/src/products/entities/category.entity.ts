@@ -1,20 +1,17 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { Product } from './product.entity';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
-@Entity('categories')
+@Schema({ toJSON: { virtuals: true, versionKey: false } })
 export class Category {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column({ unique: true })
+  @Prop({ unique: true, required: true })
   name: string;
 
-  @Column({ nullable: true })
+  @Prop()
   description: string;
 
-  @Column({ nullable: true })
+  @Prop()
   iconUrl: string;
-
-  @OneToMany(() => Product, (p) => p.category)
-  products: Product[];
 }
+
+export type CategoryDocument = Category & Document & { id: string };
+export const CategorySchema = SchemaFactory.createForClass(Category);

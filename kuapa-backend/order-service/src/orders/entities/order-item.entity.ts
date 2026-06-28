@@ -1,29 +1,24 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { Order } from './order.entity';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
-@Entity('order_items')
+@Schema({ _id: false })
 export class OrderItem {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @ManyToOne(() => Order, (order) => order.items)
-  order: Order;
-
-  @Column()
+  @Prop({ required: true })
   productId: string;
 
-  @Column()
+  @Prop({ required: true })
   productName: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Prop({ type: Number, required: true })
   quantity: number;
 
-  @Column()
+  @Prop({ required: true })
   unit: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Prop({ type: Number, required: true })
   unitPrice: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Prop({ type: Number, required: true })
   totalPrice: number;
 }
+
+export const OrderItemSchema = SchemaFactory.createForClass(OrderItem);

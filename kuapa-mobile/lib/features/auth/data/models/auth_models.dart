@@ -4,23 +4,25 @@ class AuthUser {
   final String id;
   final String? email;
   final String? phone;
+  final String? username;
   final UserRole role;
 
-  const AuthUser({required this.id, this.email, this.phone, required this.role});
+  const AuthUser({required this.id, this.email, this.phone, this.username, required this.role});
 
   factory AuthUser.fromJson(Map<String, dynamic> json) => AuthUser(
         id: json['id'],
         email: json['email'],
         phone: json['phone'],
+        username: json['username'],
         role: UserRole.values.firstWhere(
           (r) => r.name == json['role'],
           orElse: () => UserRole.BUYER,
         ),
       );
 
-  Map<String, dynamic> toJson() => {'id': id, 'email': email, 'phone': phone, 'role': role.name};
+  Map<String, dynamic> toJson() => {'id': id, 'email': email, 'phone': phone, 'username': username, 'role': role.name};
 
-  String get displayName => email ?? phone ?? 'User';
+  String get displayName => username ?? email ?? phone ?? 'User';
 }
 
 class AuthResponse {

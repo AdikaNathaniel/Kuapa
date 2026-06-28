@@ -1,4 +1,5 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
 export enum PaymentMethod {
   MTN_MOBILE_MONEY = 'MTN_MOBILE_MONEY',
@@ -15,44 +16,38 @@ export enum PaymentStatus {
   REFUNDED = 'REFUNDED',
 }
 
-@Entity('payments')
+@Schema({ timestamps: true, toJSON: { virtuals: true, versionKey: false } })
 export class Payment {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column()
+  @Prop({ required: true })
   orderId: string;
 
-  @Column()
+  @Prop({ required: true })
   payerId: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Prop({ type: Number, required: true })
   amount: number;
 
-  @Column({ default: 'GHS' })
+  @Prop({ default: 'GHS' })
   currency: string;
 
-  @Column({ type: 'varchar', default: PaymentMethod.MTN_MOBILE_MONEY })
+  @Prop({ type: String, enum: PaymentMethod, default: PaymentMethod.MTN_MOBILE_MONEY })
   method: PaymentMethod;
 
-  @Column({ type: 'varchar', default: PaymentStatus.PENDING })
+  @Prop({ type: String, enum: PaymentStatus, default: PaymentStatus.PENDING })
   status: PaymentStatus;
 
-  @Column({ unique: true })
+  @Prop({ unique: true, required: true })
   transactionRef: string;
 
-  @Column({ nullable: true })
+  @Prop()
   providerRef: string;
 
-  @Column({ nullable: true })
+  @Prop()
   phoneNumber: string;
 
-  @Column({ nullable: true })
+  @Prop()
   failureReason: string;
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
 }
+
+export type PaymentDocument = Payment & Document & { id: string };
+export const PaymentSchema = SchemaFactory.createForClass(Payment);

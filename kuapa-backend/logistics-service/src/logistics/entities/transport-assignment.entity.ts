@@ -1,52 +1,39 @@
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  OneToOne,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
-import { TransportRequest } from './transport-request.entity';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
-@Entity('transport_assignments')
+@Schema({ _id: false })
 export class TransportAssignment {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @OneToOne(() => TransportRequest, (r) => r.assignment)
-  @JoinColumn()
-  request: TransportRequest;
-
-  @Column()
+  @Prop({ required: true })
   transporterId: string;
 
-  @Column()
+  @Prop({ required: true })
   transporterName: string;
 
-  @Column({ nullable: true })
+  @Prop()
   transporterPhone: string;
 
-  @Column({ nullable: true })
+  @Prop()
   vehicleType: string;
 
-  @Column({ nullable: true })
+  @Prop()
   vehicleNumber: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  @Prop({ type: Number })
   currentLat: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  @Prop({ type: Number })
   currentLng: number;
 
-  @Column({ nullable: true })
+  @Prop({ type: Date })
   acceptedAt: Date;
 
-  @Column({ nullable: true })
+  @Prop({ type: Date })
   pickedUpAt: Date;
 
-  @Column({ nullable: true })
+  @Prop({ type: Date })
   deliveredAt: Date;
 
-  @UpdateDateColumn()
+  @Prop({ type: Date })
   updatedAt: Date;
 }
+
+export const TransportAssignmentSchema = SchemaFactory.createForClass(TransportAssignment);

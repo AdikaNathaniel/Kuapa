@@ -53,9 +53,35 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/kuapa_logo.jpg"
 
 flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/images/crops/vegetables/tomato/
+    - assets/images/crops/vegetables/pepper/
+    - assets/images/crops/vegetables/onion/
+    - assets/images/crops/vegetables/okra/
+    - assets/images/crops/vegetables/cabbage/
+    - assets/images/crops/vegetables/carrot/
+    - assets/images/crops/vegetables/garden_egg/
+    - assets/images/crops/staples/yam/
+    - assets/images/crops/staples/cassava/
+    - assets/images/crops/staples/plantain/
+    - assets/images/crops/staples/maize/
+    - assets/images/crops/staples/rice/
+    - assets/images/crops/staples/cocoyam/
+    - assets/images/crops/staples/sweet_potato/
+    - assets/images/crops/legumes/groundnut/
+    - assets/images/crops/legumes/cowpea/
+    - assets/images/crops/fruits/mango/
+    - assets/images/crops/fruits/watermelon/
+    - assets/images/crops/fruits/pineapple/
+    - assets/images/crops/spices/ginger/
     - assets/icons/

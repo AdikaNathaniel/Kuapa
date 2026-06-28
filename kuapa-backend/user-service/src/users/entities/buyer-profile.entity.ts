@@ -1,4 +1,5 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
 export enum BusinessType {
   RETAILER = 'RETAILER',
@@ -9,50 +10,44 @@ export enum BusinessType {
   OTHER = 'OTHER',
 }
 
-@Entity('buyer_profiles')
+@Schema({ timestamps: true, toJSON: { virtuals: true, versionKey: false } })
 export class BuyerProfile {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column({ unique: true })
+  @Prop({ unique: true, required: true })
   userId: string;
 
-  @Column()
+  @Prop({ required: true })
   fullName: string;
 
-  @Column({ nullable: true })
+  @Prop()
   phone: string;
 
-  @Column({ nullable: true })
+  @Prop()
   businessName: string;
 
-  @Column({ type: 'varchar', default: BusinessType.HOUSEHOLD })
+  @Prop({ type: String, enum: BusinessType, default: BusinessType.HOUSEHOLD })
   businessType: BusinessType;
 
-  @Column({ nullable: true })
+  @Prop()
   region: string;
 
-  @Column({ nullable: true })
+  @Prop()
   address: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  @Prop({ type: Number })
   locationLat: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  @Prop({ type: Number })
   locationLng: number;
 
-  @Column({ nullable: true })
+  @Prop()
   avatarUrl: string;
 
-  @Column({ type: 'decimal', precision: 3, scale: 2, default: 0 })
+  @Prop({ type: Number, default: 0 })
   rating: number;
 
-  @Column({ default: 0 })
+  @Prop({ default: 0 })
   totalReviews: number;
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
 }
+
+export type BuyerProfileDocument = BuyerProfile & Document & { id: string };
+export const BuyerProfileSchema = SchemaFactory.createForClass(BuyerProfile);

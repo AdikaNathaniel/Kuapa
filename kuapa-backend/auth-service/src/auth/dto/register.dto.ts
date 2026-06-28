@@ -5,6 +5,11 @@ import { UserRole } from '../entities/user.entity';
 export class RegisterDto {
   @ApiPropertyOptional()
   @IsOptional()
+  @IsString()
+  username?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsEmail()
   email?: string;
 

@@ -33,7 +33,6 @@ class FarmerDashboard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Welcome banner
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -82,21 +81,21 @@ class FarmerDashboard extends ConsumerWidget {
                   icon: Icons.inventory_2_outlined,
                   label: 'My Listings',
                   subtitle: 'Manage stock',
-                  color: Colors.blue,
+                  color: AppTheme.primary,
                   onTap: () => context.push('/farmer/listings'),
                 ),
                 _ActionCard(
                   icon: Icons.receipt_long_outlined,
                   label: 'Orders',
                   subtitle: 'Incoming orders',
-                  color: AppTheme.secondary,
+                  color: AppTheme.primaryLight,
                   onTap: () => context.push('/farmer/orders'),
                 ),
                 _ActionCard(
                   icon: Icons.local_shipping_outlined,
                   label: 'Transport',
                   subtitle: 'Request delivery',
-                  color: Colors.purple,
+                  color: AppTheme.primary,
                   onTap: () {},
                 ),
               ],
@@ -115,7 +114,7 @@ class FarmerDashboard extends ConsumerWidget {
             ),
             _ActivityTile(
               icon: Icons.circle,
-              iconColor: Colors.blue,
+              iconColor: AppTheme.primaryLight,
               title: 'Listing viewed',
               subtitle: 'Peppers × 10kg — 5 views today',
               time: '1 hr ago',

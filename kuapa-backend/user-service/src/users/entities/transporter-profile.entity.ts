@@ -1,4 +1,5 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
 export enum VehicleType {
   MOTORCYCLE = 'MOTORCYCLE',
@@ -7,53 +8,47 @@ export enum VehicleType {
   TRUCK = 'TRUCK',
 }
 
-@Entity('transporter_profiles')
+@Schema({ timestamps: true, toJSON: { virtuals: true, versionKey: false } })
 export class TransporterProfile {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column({ unique: true })
+  @Prop({ unique: true, required: true })
   userId: string;
 
-  @Column()
+  @Prop({ required: true })
   fullName: string;
 
-  @Column({ nullable: true })
+  @Prop()
   phone: string;
 
-  @Column({ type: 'varchar', default: VehicleType.PICKUP })
+  @Prop({ type: String, enum: VehicleType, default: VehicleType.PICKUP })
   vehicleType: VehicleType;
 
-  @Column({ nullable: true })
+  @Prop()
   vehicleNumber: string;
 
-  @Column({ type: 'decimal', nullable: true })
+  @Prop({ type: Number })
   capacityKg: number;
 
-  @Column({ nullable: true })
+  @Prop()
   region: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  @Prop({ type: Number })
   currentLat: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  @Prop({ type: Number })
   currentLng: number;
 
-  @Column({ default: true })
+  @Prop({ default: true })
   isAvailable: boolean;
 
-  @Column({ nullable: true })
+  @Prop()
   avatarUrl: string;
 
-  @Column({ type: 'decimal', precision: 3, scale: 2, default: 0 })
+  @Prop({ type: Number, default: 0 })
   rating: number;
 
-  @Column({ default: 0 })
+  @Prop({ default: 0 })
   totalReviews: number;
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
 }
+
+export type TransporterProfileDocument = TransporterProfile & Document & { id: string };
+export const TransporterProfileSchema = SchemaFactory.createForClass(TransporterProfile);

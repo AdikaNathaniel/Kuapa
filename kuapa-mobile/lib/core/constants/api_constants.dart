@@ -1,6 +1,5 @@
 class ApiConstants {
-  static const String baseUrl = 'http://10.0.2.2:3000/api/v1'; // Android emulator → localhost
-  // static const String baseUrl = 'http://localhost:3000/api/v1'; // iOS simulator
+  static const String baseUrl = 'https://kuapa-app.fly.dev/api/v1';
 
   // Auth
   static const String register = '/auth/register';
@@ -48,5 +47,5 @@ class ApiConstants {
   static const String paymentHistory = '/payments/history';
 
   // WebSocket
-  static const String wsUrl = 'http://10.0.2.2:3007'; // chat-service
+  static const String wsUrl = 'wss://kuapa-app.fly.dev';
 }

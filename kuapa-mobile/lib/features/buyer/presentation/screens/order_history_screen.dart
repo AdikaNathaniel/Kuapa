@@ -57,12 +57,12 @@ class _BuyerOrderCard extends StatelessWidget {
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'PENDING': return Colors.orange;
-      case 'CONFIRMED': return Colors.blue;
-      case 'PROCESSING': return Colors.indigo;
-      case 'READY_FOR_PICKUP': return Colors.teal;
-      case 'IN_TRANSIT': return Colors.purple;
-      case 'DELIVERED': return Colors.green;
+      case 'PENDING': return AppTheme.primary;
+      case 'CONFIRMED': return AppTheme.primaryLight;
+      case 'PROCESSING': return AppTheme.primary;
+      case 'READY_FOR_PICKUP': return AppTheme.primaryLight;
+      case 'IN_TRANSIT': return AppTheme.primary;
+      case 'DELIVERED': return AppTheme.primaryLight;
       case 'CANCELLED': return Colors.red;
       default: return Colors.grey;
     }
@@ -151,14 +151,14 @@ class _BuyerOrderCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: paymentStatus == 'PAID' ? Colors.green.shade50 : Colors.orange.shade50,
+                    color: AppTheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     paymentStatus == 'PAID' ? 'Paid' : 'Payment Pending',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 11,
-                      color: paymentStatus == 'PAID' ? Colors.green.shade700 : Colors.orange.shade700,
+                      color: AppTheme.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

@@ -1,0 +1,10 @@
+app = "kuapa-orders"
+primary_region = "lhr"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

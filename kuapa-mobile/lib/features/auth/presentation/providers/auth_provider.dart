@@ -21,6 +21,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthUser?>> {
   }
 
   Future<void> register({
+    String? username,
     String? email,
     String? phone,
     required String password,
@@ -28,6 +29,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthUser?>> {
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() => _repo.register(
+          username: username,
           email: email,
           phone: phone,
           password: password,

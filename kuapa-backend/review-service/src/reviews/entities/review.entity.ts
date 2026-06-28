@@ -1,4 +1,5 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
 export enum RevieweeType {
   FARMER = 'FARMER',
@@ -6,35 +7,32 @@ export enum RevieweeType {
   TRANSPORTER = 'TRANSPORTER',
 }
 
-@Entity('reviews')
+@Schema({ timestamps: true, toJSON: { virtuals: true, versionKey: false } })
 export class Review {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column()
+  @Prop({ required: true })
   reviewerId: string;
 
-  @Column()
+  @Prop({ required: true })
   reviewerName: string;
 
-  @Column()
+  @Prop({ required: true })
   revieweeId: string;
 
-  @Column()
+  @Prop({ required: true })
   revieweeName: string;
 
-  @Column({ type: 'varchar', default: RevieweeType.FARMER })
+  @Prop({ type: String, enum: RevieweeType, default: RevieweeType.FARMER })
   revieweeType: RevieweeType;
 
-  @Column({ nullable: true })
+  @Prop()
   orderId: string;
 
-  @Column({ type: 'int' })
+  @Prop({ type: Number, required: true })
   rating: number;
 
-  @Column({ nullable: true })
+  @Prop()
   comment: string;
-
-  @CreateDateColumn()
-  createdAt: Date;
 }
+
+export type ReviewDocument = Review & Document & { id: string };
+export const ReviewSchema = SchemaFactory.createForClass(Review);

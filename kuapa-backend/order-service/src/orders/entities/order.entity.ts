@@ -1,12 +1,6 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
-import { OrderItem } from './order-item.entity';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+import { OrderItem, OrderItemSchema } from './order-item.entity';
 
 export enum OrderStatus {
   PENDING = 'PENDING',
@@ -26,62 +20,56 @@ export enum PaymentStatus {
   REFUNDED = 'REFUNDED',
 }
 
-@Entity('orders')
+@Schema({ timestamps: true, toJSON: { virtuals: true, versionKey: false } })
 export class Order {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column()
+  @Prop({ required: true })
   buyerId: string;
 
-  @Column()
+  @Prop({ required: true })
   buyerName: string;
 
-  @Column()
+  @Prop({ required: true })
   farmerId: string;
 
-  @Column()
+  @Prop({ required: true })
   farmerName: string;
 
-  @Column({ type: 'varchar', default: OrderStatus.PENDING })
+  @Prop({ type: String, enum: OrderStatus, default: OrderStatus.PENDING })
   status: OrderStatus;
 
-  @OneToMany(() => OrderItem, (item) => item.order, { cascade: true, eager: true })
+  @Prop({ type: [OrderItemSchema], default: [] })
   items: OrderItem[];
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Prop({ type: Number, default: 0 })
   subtotal: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Prop({ type: Number, default: 0 })
   deliveryFee: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Prop({ type: Number, default: 0 })
   totalAmount: number;
 
-  @Column({ default: 'GHS' })
+  @Prop({ default: 'GHS' })
   currency: string;
 
-  @Column({ nullable: true })
+  @Prop()
   deliveryAddress: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  @Prop({ type: Number })
   deliveryLat: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  @Prop({ type: Number })
   deliveryLng: number;
 
-  @Column({ nullable: true })
+  @Prop()
   notes: string;
 
-  @Column({ type: 'varchar', default: PaymentStatus.PENDING })
+  @Prop({ type: String, enum: PaymentStatus, default: PaymentStatus.PENDING })
   paymentStatus: PaymentStatus;
 
-  @Column({ nullable: true })
+  @Prop()
   paymentRef: string;
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
 }
+
+export type OrderDocument = Order & Document & { id: string };
+export const OrderSchema = SchemaFactory.createForClass(Order);

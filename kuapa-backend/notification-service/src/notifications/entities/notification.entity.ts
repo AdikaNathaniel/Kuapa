@@ -1,4 +1,5 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
 export enum NotificationType {
   ORDER = 'ORDER',
@@ -8,32 +9,29 @@ export enum NotificationType {
   SYSTEM = 'SYSTEM',
 }
 
-@Entity('notifications')
+@Schema({ timestamps: true, toJSON: { virtuals: true, versionKey: false } })
 export class Notification {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column()
+  @Prop({ required: true })
   userId: string;
 
-  @Column()
+  @Prop({ required: true })
   title: string;
 
-  @Column()
+  @Prop({ required: true })
   body: string;
 
-  @Column({ type: 'varchar', default: NotificationType.SYSTEM })
+  @Prop({ type: String, enum: NotificationType, default: NotificationType.SYSTEM })
   type: NotificationType;
 
-  @Column({ nullable: true })
+  @Prop()
   referenceId: string;
 
-  @Column({ nullable: true, type: 'jsonb' })
+  @Prop({ type: Object })
   data: object;
 
-  @Column({ default: false })
+  @Prop({ default: false })
   isRead: boolean;
-
-  @CreateDateColumn()
-  createdAt: Date;
 }
+
+export type NotificationDocument = Notification & Document & { id: string };
+export const NotificationSchema = SchemaFactory.createForClass(Notification);

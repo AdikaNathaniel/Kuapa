@@ -83,12 +83,12 @@ class _ListingCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isAvailable ? Colors.green.shade100 : Colors.red.shade100,
+                    color: isAvailable ? AppTheme.primary.withValues(alpha: 0.12) : Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     isAvailable ? 'Available' : 'Sold Out',
-                    style: TextStyle(fontSize: 12, color: isAvailable ? Colors.green.shade800 : Colors.red.shade800, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 12, color: isAvailable ? AppTheme.primary : Colors.grey.shade700, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],

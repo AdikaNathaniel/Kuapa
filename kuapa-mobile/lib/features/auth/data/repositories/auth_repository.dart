@@ -1,18 +1,20 @@
-import '../../../core/network/api_client.dart';
-import '../../../core/storage/secure_storage.dart';
-import '../../../core/constants/api_constants.dart';
+import '../../../../core/network/api_client.dart';
+import '../../../../core/storage/secure_storage.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../models/auth_models.dart';
 
 class AuthRepository {
   final _client = ApiClient.instance;
 
   Future<AuthResponse> register({
+    String? username,
     String? email,
     String? phone,
     required String password,
     required UserRole role,
   }) async {
     final res = await _client.post(ApiConstants.register, data: {
+      if (username != null) 'username': username,
       if (email != null) 'email': email,
       if (phone != null) 'phone': phone,
       'password': password,

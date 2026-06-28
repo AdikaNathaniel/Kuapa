@@ -151,12 +151,12 @@ class _RequestCard extends StatelessWidget {
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'PENDING': return Colors.orange;
-      case 'MATCHED': return Colors.blue;
-      case 'ACCEPTED': return Colors.indigo;
-      case 'PICKED_UP': return Colors.teal;
-      case 'IN_TRANSIT': return Colors.purple;
-      case 'DELIVERED': return Colors.green;
+      case 'PENDING': return AppTheme.primary;
+      case 'MATCHED': return AppTheme.primaryLight;
+      case 'ACCEPTED': return AppTheme.primary;
+      case 'PICKED_UP': return AppTheme.primaryLight;
+      case 'IN_TRANSIT': return AppTheme.primary;
+      case 'DELIVERED': return AppTheme.primaryLight;
       case 'CANCELLED': return Colors.red;
       default: return Colors.grey;
     }
@@ -217,9 +217,9 @@ class _RequestCard extends StatelessWidget {
               children: [
                 Column(
                   children: [
-                    const Icon(Icons.circle, color: Colors.green, size: 12),
+                    const Icon(Icons.circle, color: AppTheme.primaryLight, size: 12),
                     Container(width: 2, height: 24, color: Colors.grey.shade300),
-                    const Icon(Icons.location_on, color: Colors.red, size: 16),
+                    const Icon(Icons.location_on, color: AppTheme.primary, size: 16),
                   ],
                 ),
                 const SizedBox(width: 12),
@@ -284,7 +284,7 @@ class _RequestCard extends StatelessWidget {
                   onPressed: () => _updateStatus(context, request['id'], 'DELIVERED'),
                   icon: const Icon(Icons.done_all, size: 16),
                   label: const Text('Mark as Delivered'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary),
                 ),
               ),
             ],

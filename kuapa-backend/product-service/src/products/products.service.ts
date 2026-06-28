@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Product } from './entities/product.entity';
-import { Category } from './entities/category.entity';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Product, ProductDocument } from './entities/product.entity';
+import { Category, CategoryDocument } from './entities/category.entity';
 import { CreateProductDto, ProductFilterDto } from './dto/create-product.dto';
 
 const DEFAULT_CATEGORIES = [
@@ -21,20 +21,19 @@ const DEFAULT_CATEGORIES = [
 @Injectable()
 export class ProductsService implements OnModuleInit {
   constructor(
-    @InjectRepository(Product) private productRepo: Repository<Product>,
-    @InjectRepository(Category) private categoryRepo: Repository<Category>,
+    @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    @InjectModel(Category.name) private categoryModel: Model<CategoryDocument>,
   ) {}
 
   async onModuleInit() {
     for (const cat of DEFAULT_CATEGORIES) {
-      const exists = await this.categoryRepo.findOne({ where: { name: cat.name } });
-      if (!exists) await this.categoryRepo.save(this.categoryRepo.create(cat));
+      const exists = await this.categoryModel.findOne({ name: cat.name });
+      if (!exists) await new this.categoryModel(cat).save();
     }
   }
 
   async create(dto: CreateProductDto) {
-    const product = this.productRepo.create(dto);
-    return this.productRepo.save(product);
+    return new this.productModel(dto).save();
   }
 
   async findAll(filters: ProductFilterDto) {
@@ -42,83 +41,60 @@ export class ProductsService implements OnModuleInit {
     const limit = filters.limit || 20;
     const skip = (page - 1) * limit;
 
-    const query = this.productRepo
-      .createQueryBuilder('p')
-      .leftJoinAndSelect('p.category', 'category')
-      .where('p.isAvailable = true');
+    const query: any = { isAvailable: true };
 
     if (filters.search) {
-      query.andWhere('(p.name ILIKE :search OR p.description ILIKE :search)', {
-        search: `%${filters.search}%`,
-      });
+      const re = new RegExp(filters.search, 'i');
+      query.$or = [{ name: re }, { description: re }];
     }
-    if (filters.region) {
-      query.andWhere('p.region ILIKE :region', { region: `%${filters.region}%` });
-    }
-    if (filters.farmerId) {
-      query.andWhere('p.farmerId = :farmerId', { farmerId: filters.farmerId });
-    }
-    if (filters.category) {
-      query.andWhere('category.name ILIKE :cat', { cat: `%${filters.category}%` });
-    }
-    if (filters.minPrice) {
-      query.andWhere('p.pricePerUnit >= :min', { min: filters.minPrice });
-    }
-    if (filters.maxPrice) {
-      query.andWhere('p.pricePerUnit <= :max', { max: filters.maxPrice });
-    }
+    if (filters.region) query.region = new RegExp(filters.region, 'i');
+    if (filters.farmerId) query.farmerId = filters.farmerId;
+    if (filters.category) query.categoryName = new RegExp(filters.category, 'i');
+    if (filters.minPrice) query.pricePerUnit = { ...query.pricePerUnit, $gte: filters.minPrice };
+    if (filters.maxPrice) query.pricePerUnit = { ...query.pricePerUnit, $lte: filters.maxPrice };
 
-    const [data, total] = await query
-      .orderBy('p.createdAt', 'DESC')
-      .skip(skip)
-      .take(limit)
-      .getManyAndCount();
+    const [data, total] = await Promise.all([
+      this.productModel.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      this.productModel.countDocuments(query),
+    ]);
 
     return { data, total, page, limit, pages: Math.ceil(total / limit) };
   }
 
   async findOne(id: string) {
-    const product = await this.productRepo.findOne({
-      where: { id },
-      relations: ['category'],
-    });
+    const product = await this.productModel.findById(id);
     if (!product) throw new NotFoundException('Product not found');
     return product;
   }
 
   async findByFarmer(farmerId: string) {
-    return this.productRepo.find({
-      where: { farmerId },
-      relations: ['category'],
-      order: { createdAt: 'DESC' },
-    });
+    return this.productModel.find({ farmerId }).sort({ createdAt: -1 });
   }
 
   async update(id: string, farmerId: string, data: Partial<Product>) {
-    const product = await this.productRepo.findOne({ where: { id, farmerId } });
+    const product = await this.productModel.findOne({ _id: id, farmerId });
     if (!product) throw new NotFoundException('Product not found');
-    await this.productRepo.update(id, data);
-    return this.findOne(id);
+    return this.productModel.findByIdAndUpdate(id, data, { new: true });
   }
 
   async remove(id: string, farmerId: string) {
-    const product = await this.productRepo.findOne({ where: { id, farmerId } });
+    const product = await this.productModel.findOne({ _id: id, farmerId });
     if (!product) throw new NotFoundException('Product not found');
-    await this.productRepo.remove(product);
+    await this.productModel.findByIdAndDelete(id);
     return { success: true };
   }
 
   async getCategories() {
-    return this.categoryRepo.find({ order: { name: 'ASC' } });
+    return this.categoryModel.find().sort({ name: 1 });
   }
 
   async updateProductStats(id: string, sold: number) {
-    await this.productRepo.increment({ id }, 'totalOrders', 1);
-    const product = await this.productRepo.findOne({ where: { id } });
+    const product = await this.productModel.findById(id);
     if (product) {
-      const newQty = product.quantity - sold;
-      await this.productRepo.update(id, {
-        quantity: newQty < 0 ? 0 : newQty,
+      const newQty = Math.max(0, product.quantity - sold);
+      await this.productModel.findByIdAndUpdate(id, {
+        $inc: { totalOrders: 1 },
+        quantity: newQty,
         isAvailable: newQty > 0,
       });
     }

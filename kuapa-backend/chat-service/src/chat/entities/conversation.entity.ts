@@ -1,32 +1,26 @@
-import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { Message } from './message.entity';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
-@Entity('conversations')
+@Schema({ timestamps: true, toJSON: { virtuals: true, versionKey: false } })
 export class Conversation {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column()
+  @Prop({ required: true })
   participant1Id: string;
 
-  @Column()
+  @Prop({ required: true })
   participant1Name: string;
 
-  @Column()
+  @Prop({ required: true })
   participant2Id: string;
 
-  @Column()
+  @Prop({ required: true })
   participant2Name: string;
 
-  @Column({ nullable: true })
+  @Prop()
   lastMessage: string;
 
-  @Column({ nullable: true })
+  @Prop({ type: Date })
   lastMessageAt: Date;
-
-  @OneToMany(() => Message, (m) => m.conversation)
-  messages: Message[];
-
-  @CreateDateColumn()
-  createdAt: Date;
 }
+
+export type ConversationDocument = Conversation & Document & { id: string };
+export const ConversationSchema = SchemaFactory.createForClass(Conversation);

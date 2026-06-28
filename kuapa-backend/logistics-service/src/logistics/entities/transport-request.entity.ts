@@ -1,12 +1,6 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  OneToOne,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
-import { TransportAssignment } from './transport-assignment.entity';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+import { TransportAssignment, TransportAssignmentSchema } from './transport-assignment.entity';
 
 export enum TransportStatus {
   PENDING = 'PENDING',
@@ -23,68 +17,62 @@ export enum RequesterType {
   BUYER = 'BUYER',
 }
 
-@Entity('transport_requests')
+@Schema({ timestamps: true, toJSON: { virtuals: true, versionKey: false } })
 export class TransportRequest {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column({ nullable: true })
+  @Prop()
   orderId: string;
 
-  @Column()
+  @Prop({ required: true })
   requesterId: string;
 
-  @Column()
+  @Prop({ required: true })
   requesterName: string;
 
-  @Column({ type: 'varchar', default: RequesterType.FARMER })
+  @Prop({ type: String, enum: RequesterType, default: RequesterType.FARMER })
   requesterType: RequesterType;
 
-  @Column()
+  @Prop({ required: true })
   pickupAddress: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  @Prop({ type: Number })
   pickupLat: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  @Prop({ type: Number })
   pickupLng: number;
 
-  @Column()
+  @Prop({ required: true })
   deliveryAddress: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  @Prop({ type: Number })
   deliveryLat: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  @Prop({ type: Number })
   deliveryLng: number;
 
-  @Column({ nullable: true })
+  @Prop()
   cargoDescription: string;
 
-  @Column({ type: 'decimal', nullable: true })
+  @Prop({ type: Number })
   weightKg: number;
 
-  @Column({ type: 'varchar', default: TransportStatus.PENDING })
+  @Prop({ type: String, enum: TransportStatus, default: TransportStatus.PENDING })
   status: TransportStatus;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  @Prop({ type: Number })
   estimatedCost: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  @Prop({ type: Number })
   actualCost: number;
 
-  @Column({ default: 'GHS' })
+  @Prop({ default: 'GHS' })
   currency: string;
 
-  @Column({ nullable: true })
+  @Prop()
   region: string;
 
-  @OneToOne(() => TransportAssignment, (a) => a.request, { nullable: true, eager: true })
+  @Prop({ type: TransportAssignmentSchema })
   assignment: TransportAssignment;
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
 }
+
+export type TransportRequestDocument = TransportRequest & Document & { id: string };
+export const TransportRequestSchema = SchemaFactory.createForClass(TransportRequest);

@@ -1,10 +1,5 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
 export enum UserRole {
   FARMER = 'FARMER',
@@ -13,35 +8,32 @@ export enum UserRole {
   ADMIN = 'ADMIN',
 }
 
-@Entity('users')
+@Schema({ timestamps: true, toJSON: { virtuals: true, versionKey: false } })
 export class User {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @Prop({ unique: true, sparse: true })
+  username: string;
 
-  @Column({ unique: true, nullable: true })
+  @Prop({ unique: true, sparse: true })
   email: string;
 
-  @Column({ unique: true, nullable: true })
+  @Prop({ unique: true, sparse: true })
   phone: string;
 
-  @Column()
+  @Prop({ required: true })
   passwordHash: string;
 
-  @Column({ type: 'varchar', default: UserRole.BUYER })
+  @Prop({ type: String, enum: UserRole, default: UserRole.BUYER })
   role: UserRole;
 
-  @Column({ default: false })
+  @Prop({ default: false })
   isVerified: boolean;
 
-  @Column({ default: true })
+  @Prop({ default: true })
   isActive: boolean;
 
-  @Column({ nullable: true })
+  @Prop()
   refreshToken: string;
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
 }
+
+export type UserDocument = User & Document & { id: string };
+export const UserSchema = SchemaFactory.createForClass(User);

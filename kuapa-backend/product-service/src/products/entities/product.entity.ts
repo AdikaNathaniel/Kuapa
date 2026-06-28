@@ -1,13 +1,5 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
-import { Category } from './category.entity';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
 export enum ProductUnit {
   KG = 'KG',
@@ -18,75 +10,68 @@ export enum ProductUnit {
   BASKET = 'BASKET',
 }
 
-@Entity('products')
+@Schema({ timestamps: true, toJSON: { virtuals: true, versionKey: false } })
 export class Product {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column()
+  @Prop({ required: true })
   farmerId: string;
 
-  @Column()
+  @Prop({ required: true })
   farmerName: string;
 
-  @Column({ nullable: true })
+  @Prop()
   categoryId: string;
 
-  @ManyToOne(() => Category, { nullable: true, eager: true })
-  @JoinColumn({ name: 'categoryId' })
-  category: Category;
+  @Prop()
+  categoryName: string;
 
-  @Column()
+  @Prop({ required: true })
   name: string;
 
-  @Column({ nullable: true })
+  @Prop()
   description: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Prop({ type: Number, required: true })
   quantity: number;
 
-  @Column({ type: 'varchar', default: ProductUnit.KG })
+  @Prop({ type: String, enum: ProductUnit, default: ProductUnit.KG })
   unit: ProductUnit;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Prop({ type: Number, required: true })
   pricePerUnit: number;
 
-  @Column({ default: 'GHS' })
+  @Prop({ default: 'GHS' })
   currency: string;
 
-  @Column('simple-array', { nullable: true })
+  @Prop({ type: [String], default: [] })
   images: string[];
 
-  @Column({ nullable: true })
+  @Prop()
   region: string;
 
-  @Column({ nullable: true })
+  @Prop()
   district: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  @Prop({ type: Number })
   locationLat: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
+  @Prop({ type: Number })
   locationLng: number;
 
-  @Column({ default: true })
+  @Prop({ default: true })
   isAvailable: boolean;
 
-  @Column({ type: 'date', nullable: true })
+  @Prop({ type: Date })
   harvestDate: Date;
 
-  @Column({ type: 'date', nullable: true })
+  @Prop({ type: Date })
   expiryDate: Date;
 
-  @Column({ type: 'decimal', precision: 3, scale: 2, default: 0 })
+  @Prop({ type: Number, default: 0 })
   rating: number;
 
-  @Column({ default: 0 })
+  @Prop({ default: 0 })
   totalOrders: number;
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
 }
+
+export type ProductDocument = Product & Document & { id: string };
+export const ProductSchema = SchemaFactory.createForClass(Product);

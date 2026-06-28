@@ -16,11 +16,12 @@ class RegisterScreen extends ConsumerStatefulWidget {
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
   UserRole _selectedRole = UserRole.BUYER;
-  bool _usePhone = false;
 
   static const _roleInfo = {
     UserRole.FARMER: ('Farmer', 'Sell your produce directly to buyers', Icons.grass),
@@ -30,17 +31,66 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   void dispose() {
+    _usernameController.dispose();
+    _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
     super.dispose();
   }
 
+  Widget _buildLogo() {
+    return Column(
+      children: [
+        Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primary.withValues(alpha: 0.25),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: Image.asset(
+              'assets/images/kuapa_logo.jpg',
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        const Text(
+          'Kuapa',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.primary,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Farm to Table, Direct',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey.shade500,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ],
+    );
+  }
+
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
     await ref.read(authUserProvider.notifier).register(
-          email: _usePhone ? null : _emailController.text.trim(),
-          phone: _usePhone ? _emailController.text.trim() : null,
+          username: _usernameController.text.trim(),
+          phone: _phoneController.text.trim(),
+          email: _emailController.text.trim(),
           password: _passwordController.text,
           role: _selectedRole,
         );
@@ -71,6 +121,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: 8),
+              Center(child: _buildLogo()),
+              const SizedBox(height: 28),
               const Text('I am a...', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               ..._roleInfo.entries.map((entry) {
@@ -108,19 +161,27 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               }),
 
               const SizedBox(height: 20),
-              Row(
-                children: [
-                  ChoiceChip(label: const Text('Email'), selected: !_usePhone, onSelected: (_) => setState(() => _usePhone = false)),
-                  const SizedBox(width: 8),
-                  ChoiceChip(label: const Text('Phone'), selected: _usePhone, onSelected: (_) => setState(() => _usePhone = true)),
-                ],
+              KuapaTextField(
+                label: 'Username',
+                controller: _usernameController,
+                keyboardType: TextInputType.text,
+                prefixIcon: Icons.person_outline,
+                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               KuapaTextField(
-                label: _usePhone ? 'Phone Number' : 'Email Address',
+                label: 'Phone Number',
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                prefixIcon: Icons.phone,
+                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              KuapaTextField(
+                label: 'Email Address',
                 controller: _emailController,
-                keyboardType: _usePhone ? TextInputType.phone : TextInputType.emailAddress,
-                prefixIcon: _usePhone ? Icons.phone : Icons.email_outlined,
+                keyboardType: TextInputType.emailAddress,
+                prefixIcon: Icons.email_outlined,
                 validator: (v) => v == null || v.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
