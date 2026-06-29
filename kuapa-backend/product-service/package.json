@@ -25,6 +25,7 @@
     "@nestjs/cli": "^10.3.2",
     "@nestjs/schematics": "^10.1.1",
     "@types/node": "^20.11.16",
+    "mongodb": "^7.4.0",
     "typescript": "^5.3.3"
   }
 }

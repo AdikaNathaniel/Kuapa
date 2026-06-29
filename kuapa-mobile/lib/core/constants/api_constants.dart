@@ -47,6 +47,7 @@ class ApiConstants {
   // Payments
   static const String initiatePayment = '/payments/initiate';
   static const String paymentHistory = '/payments/history';
+  static const String verifyPayment = '/payments/verify';
 
   // Chat REST
   static const String chatMessages = '/chat/conversations';

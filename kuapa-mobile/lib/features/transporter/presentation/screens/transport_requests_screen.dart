@@ -262,8 +262,10 @@ class _RequestCardState extends State<_RequestCard> {
 
   @override
   Widget build(BuildContext context) {
-    final status = request['status'] ?? 'PENDING';
-    final estimatedCost = request['estimatedCost'];
+    final req           = widget.request;
+    final status        = _currentStatus;
+    final estimatedCost = req['estimatedCost'];
+    final scheduled     = req['scheduledPickupAt']?.toString();
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -275,7 +277,7 @@ class _RequestCardState extends State<_RequestCard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Job #${request['id'].toString().substring(0, 8).toUpperCase()}',
+                Text('Job #${req['id'].toString().substring(0, 8).toUpperCase()}',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -288,6 +290,29 @@ class _RequestCardState extends State<_RequestCard> {
                 ),
               ],
             ),
+
+            // GPS sharing badge
+            if (_sharingLocation) ...[
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.location_on, size: 12, color: Colors.green),
+                    SizedBox(width: 4),
+                    Text('Sharing GPS location',
+                        style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.w500)),
+                  ],
+                ),
+              ),
+            ],
+
             const SizedBox(height: 10),
 
             // Pickup → Dropoff
@@ -305,10 +330,10 @@ class _RequestCardState extends State<_RequestCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('From: ${request['pickupAddress'] ?? 'Unknown'}',
+                      Text('From: ${req['pickupAddress'] ?? 'Unknown'}',
                           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                       const SizedBox(height: 10),
-                      Text('To: ${request['deliveryAddress'] ?? 'Unknown'}',
+                      Text('To: ${req['deliveryAddress'] ?? 'Unknown'}',
                           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                     ],
                   ),
@@ -316,32 +341,44 @@ class _RequestCardState extends State<_RequestCard> {
               ],
             ),
 
-            if (request['cargoDescription'] != null) ...[
+            if (req['cargoDescription'] != null) ...[
               const SizedBox(height: 8),
               Row(
                 children: [
                   const Icon(Icons.inventory_2_outlined, size: 14, color: AppTheme.textSecondary),
                   const SizedBox(width: 6),
                   Expanded(
-                    child: Text(request['cargoDescription'],
+                    child: Text(req['cargoDescription'],
                         style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                         maxLines: 1, overflow: TextOverflow.ellipsis),
                   ),
-                  if (request['weightKg'] != null)
-                    Text('${request['weightKg']} kg',
+                  if (req['weightKg'] != null)
+                    Text('${req['weightKg']} kg',
                         style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
                 ],
               ),
             ],
 
-            if (request['requesterName'] != null) ...[
+            if (req['requesterName'] != null) ...[
               const SizedBox(height: 4),
               Row(
                 children: [
                   const Icon(Icons.person_outline, size: 14, color: AppTheme.textSecondary),
                   const SizedBox(width: 6),
-                  Text('Posted by: ${request['requesterName']}',
+                  Text('Posted by: ${req['requesterName']}',
                       style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                ],
+              ),
+            ],
+
+            if (scheduled != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.schedule_outlined, size: 14, color: AppTheme.primaryLight),
+                  const SizedBox(width: 6),
+                  Text('Scheduled: ${_fmtSchedule(scheduled)}',
+                      style: const TextStyle(fontSize: 12, color: AppTheme.primaryLight, fontWeight: FontWeight.w500)),
                 ],
               ),
             ],
@@ -359,11 +396,11 @@ class _RequestCardState extends State<_RequestCard> {
 
             const SizedBox(height: 10),
 
-            if (showAccept) ...[
+            if (widget.showAccept) ...[
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => _accept(context, request['id']),
+                  onPressed: () => _accept(req['id']),
                   child: const Text('Accept Job'),
                 ),
               ),
@@ -371,7 +408,7 @@ class _RequestCardState extends State<_RequestCard> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => _updateStatus(context, request['id'], 'PICKED_UP'),
+                  onPressed: () => _updateStatus(req['id'], 'PICKED_UP'),
                   icon: const Icon(Icons.local_shipping, size: 16),
                   label: const Text('Mark as Picked Up'),
                 ),
@@ -380,7 +417,7 @@ class _RequestCardState extends State<_RequestCard> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => _updateStatus(context, request['id'], 'IN_TRANSIT'),
+                  onPressed: () => _updateStatus(req['id'], 'IN_TRANSIT'),
                   icon: const Icon(Icons.directions_car, size: 16),
                   label: const Text('Start Transit'),
                 ),
@@ -389,7 +426,7 @@ class _RequestCardState extends State<_RequestCard> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => _updateStatus(context, request['id'], 'DELIVERED'),
+                  onPressed: () => _updateStatus(req['id'], 'DELIVERED'),
                   icon: const Icon(Icons.done_all, size: 16),
                   label: const Text('Mark as Delivered'),
                   style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary),

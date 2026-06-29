@@ -10,8 +10,13 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Post('initiate')
-  initiate(@Body() data: { orderId: string; payerId: string; amount: number; method: PaymentMethod; phoneNumber?: string }) {
+  initiate(@Body() data: { orderId: string; payerId: string; payerEmail?: string; amount: number; method: PaymentMethod; phoneNumber?: string }) {
     return this.paymentsService.initiatePayment(data);
+  }
+
+  @Get('verify/:reference')
+  verify(@Param('reference') reference: string) {
+    return this.paymentsService.verifyPayment(reference);
   }
 
   @Get(':id/status')
@@ -34,9 +39,16 @@ export class PaymentsController {
     return this.paymentsService.handleWebhook(body);
   }
 
+  // ── TCP handlers ────────────────────────────────────────────────────────────
+
   @MessagePattern('PAYMENT_INITIATE')
   tcpInitiate(@Payload() data: any) {
     return this.paymentsService.initiatePayment(data);
+  }
+
+  @MessagePattern('PAYMENT_VERIFY')
+  tcpVerify(@Payload() data: { reference: string }) {
+    return this.paymentsService.verifyPayment(data.reference);
   }
 
   @MessagePattern('PAYMENT_STATUS')
@@ -47,5 +59,10 @@ export class PaymentsController {
   @MessagePattern('PAYMENT_USER_HISTORY')
   tcpHistory(@Payload() data: { payerId: string }) {
     return this.paymentsService.getUserPayments(data.payerId);
+  }
+
+  @MessagePattern('PAYMENT_WEBHOOK')
+  tcpWebhook(@Payload() data: any) {
+    return this.paymentsService.handleWebhook(data);
   }
 }

@@ -290,6 +290,28 @@ class _TransportCard extends StatelessWidget {
                   ),
                 ],
 
+                // ── Review transporter after delivery ─────────────────
+                if (status == 'DELIVERED' && assignment != null) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => context.push('/reviews/write', extra: {
+                        'revieweeId': assignment['transporterId']?.toString() ?? '',
+                        'revieweeName': assignment['transporterName']?.toString() ?? 'Transporter',
+                        'revieweeType': 'TRANSPORTER',
+                        'orderId': request['id']?.toString(),
+                      }),
+                      icon: const Icon(Icons.star_outline_rounded, size: 16),
+                      label: const Text('Review Transporter'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFFFC107),
+                        side: const BorderSide(color: Color(0xFFFFC107)),
+                      ),
+                    ),
+                  ),
+                ],
+
                 // ── Progress stepper (non-cancelled) ──────────────────
                 if (!isCancelled) ...[
                   const SizedBox(height: 16),

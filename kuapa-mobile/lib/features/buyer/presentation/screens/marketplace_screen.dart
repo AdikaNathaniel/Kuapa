@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/constants/crop_data.dart';
+import '../../../../shared/widgets/product_image.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/error_view.dart';
@@ -480,9 +481,9 @@ class _ProductCard extends StatelessWidget {
     final price     = product['pricePerUnit']?.toString() ?? '0';
     final unit      = product['unit']?.toString() ?? '';
     final qty       = product['quantity']?.toString() ?? '0';
-    final region    = product['region']?.toString();
-    final farmer    = product['farmerName']?.toString() ?? '';
-    final assetPath = CropData.assetFor(name);
+    final region  = product['region']?.toString();
+    final farmer  = product['farmerName']?.toString() ?? '';
+    final images  = product['images'] as List?;
 
     return GestureDetector(
       onTap: () => context.push('/buyer/product/${product['id']}'),
@@ -499,15 +500,10 @@ class _ProductCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.asset(
-                    assetPath,
+                  ProductImage(
+                    productName: name,
+                    images: images,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: AppTheme.primary.withValues(alpha: 0.08),
-                      child: const Center(
-                        child: Icon(Icons.eco, size: 48, color: AppTheme.primary),
-                      ),
-                    ),
                   ),
                   Positioned(
                     top: 8,

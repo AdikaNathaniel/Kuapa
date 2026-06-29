@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/services/biometric_service.dart';
 import '../../../../shared/widgets/kuapa_button.dart';
 import '../../../../shared/widgets/kuapa_text_field.dart';
 import '../providers/auth_provider.dart';
@@ -18,6 +19,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  bool _biometricAvailable = false;
+  bool _hasStoredCredentials = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometric();
+  }
+
+  Future<void> _checkBiometric() async {
+    final available = await BiometricService.instance.isAvailable();
+    final hasCreds = await BiometricService.instance.hasStoredCredentials();
+    if (mounted) {
+      setState(() {
+        _biometricAvailable = available;
+        _hasStoredCredentials = hasCreds;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _phoneController.dispose();
@@ -27,19 +48,45 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-    await ref.read(authUserProvider.notifier).login(
-          phone: _phoneController.text.trim(),
-          password: _passwordController.text,
-        );
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text;
+
+    await ref.read(authUserProvider.notifier).login(phone: phone, password: password);
 
     if (!mounted) return;
     final user = ref.read(authUserProvider).valueOrNull;
     if (user != null) {
-      switch (user.role.name) {
-        case 'FARMER': context.go('/farmer/dashboard');
-        case 'BUYER': context.go('/buyer/dashboard');
-        case 'TRANSPORTER': context.go('/transporter/dashboard');
+      // Save credentials for future biometric login
+      if (_biometricAvailable) {
+        await BiometricService.instance.saveCredentials(phone, password);
+        if (mounted) setState(() => _hasStoredCredentials = true);
       }
+      _navigateToDashboard(user.role.name);
+    }
+  }
+
+  Future<void> _biometricLogin() async {
+    final authenticated = await BiometricService.instance.authenticate();
+    if (!authenticated) return;
+
+    final creds = await BiometricService.instance.getCredentials();
+    if (creds == null) return;
+
+    await ref.read(authUserProvider.notifier).login(phone: creds.phone, password: creds.password);
+
+    if (!mounted) return;
+    final user = ref.read(authUserProvider).valueOrNull;
+    if (user != null) _navigateToDashboard(user.role.name);
+  }
+
+  void _navigateToDashboard(String role) {
+    switch (role) {
+      case 'FARMER':
+        context.go('/farmer/dashboard');
+      case 'BUYER':
+        context.go('/buyer/dashboard');
+      case 'TRANSPORTER':
+        context.go('/transporter/dashboard');
     }
   }
 
@@ -94,6 +141,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final authState = ref.watch(authUserProvider);
     final isLoading = authState.isLoading;
     final error = authState.hasError ? authState.error.toString() : null;
+    final showBiometric = _biometricAvailable && _hasStoredCredentials;
 
     return Scaffold(
       body: SafeArea(
@@ -148,7 +196,54 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 const SizedBox(height: 24),
                 KuapaButton(label: 'Sign In', onPressed: _login, isLoading: isLoading),
-                const SizedBox(height: 16),
+
+                if (showBiometric) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Expanded(child: Divider()),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text('or', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                      ),
+                      const Expanded(child: Divider()),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: GestureDetector(
+                      onTap: isLoading ? null : _biometricLogin,
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              color: AppTheme.primary.withValues(alpha: 0.08),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppTheme.primary.withValues(alpha: 0.3),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: const Icon(Icons.fingerprint, size: 36, color: AppTheme.primary),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Sign in with Fingerprint',
+                            style: TextStyle(
+                              color: AppTheme.primary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

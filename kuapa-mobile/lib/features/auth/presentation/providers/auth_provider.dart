@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/auth_models.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../../../../core/services/notification_service.dart';
 
 final authRepositoryProvider = Provider((_) => AuthRepository());
 
@@ -35,6 +36,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthUser?>> {
           password: password,
           role: role,
         ).then((r) => r.user));
+    if (state.hasValue && state.value != null) {
+      NotificationService.instance.registerTokenAfterLogin();
+    }
   }
 
   Future<void> login({String? email, String? phone, required String password}) async {
@@ -44,6 +48,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthUser?>> {
           phone: phone,
           password: password,
         ).then((r) => r.user));
+    if (state.hasValue && state.value != null) {
+      NotificationService.instance.registerTokenAfterLogin();
+    }
   }
 
   Future<void> logout() async {

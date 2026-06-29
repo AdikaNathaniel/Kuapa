@@ -1,0 +1,63 @@
+# ─── Secrets & credentials ────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# Firebase service-account keys (the admin SDK JSON from Firebase console)
+*firebase-adminsdk*.json
+*-service-account*.json
+# Root-level google-services.json backup (the one inside android/app/ is kept)
+/google-services.json
+
+# ─── Node / NestJS backend ────────────────────────────────────────────────────
+node_modules/
+dist/
+*.js.map
+*.d.ts.map
+
+# NestJS build cache
+.nestjs/
+
+# Seed scripts contain hard-coded credentials
+kuapa-backend/product-service/seed.js
+kuapa-backend/product-service/seed.ts
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── OS & editor ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/settings.json
+
+# ─── Flutter / Dart ───────────────────────────────────────────────────────────
+# (kuapa-mobile/.gitignore handles Flutter-specific ignores;
+#  these supplement at the monorepo level)
+kuapa-mobile/.dart_tool/
+kuapa-mobile/.flutter-plugins
+kuapa-mobile/.flutter-plugins-dependencies
+kuapa-mobile/build/
+kuapa-mobile/.pub-cache/
+kuapa-mobile/coverage/
+
+# ─── Android build artifacts ──────────────────────────────────────────────────
+kuapa-mobile/android/.gradle/
+kuapa-mobile/android/app/debug/
+kuapa-mobile/android/app/profile/
+kuapa-mobile/android/app/release/
+kuapa-mobile/android/local.properties
+
+# ─── iOS build artifacts ──────────────────────────────────────────────────────
+kuapa-mobile/ios/Pods/
+kuapa-mobile/ios/.symlinks/
+kuapa-mobile/ios/Flutter/Flutter.framework
+kuapa-mobile/ios/Flutter/Flutter.podspec
+kuapa-mobile/ios/GoogleService-Info.plist

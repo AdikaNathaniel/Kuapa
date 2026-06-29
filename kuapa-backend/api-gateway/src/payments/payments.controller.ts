@@ -15,9 +15,21 @@ export class PaymentsGatewayController {
 
   @Post('initiate')
   @Roles('BUYER')
-  @ApiOperation({ summary: 'Buyer: initiate mobile money payment for an order' })
+  @ApiOperation({ summary: 'Initiate Paystack payment for an order' })
   initiate(@Request() req, @Body() body: any) {
-    return firstValueFrom(this.paymentClient.send('PAYMENT_INITIATE', { ...body, payerId: req.user.id }));
+    return firstValueFrom(
+      this.paymentClient.send('PAYMENT_INITIATE', {
+        ...body,
+        payerId: req.user.id,
+        payerEmail: req.user.email,
+      }),
+    );
+  }
+
+  @Get('verify/:reference')
+  @ApiOperation({ summary: 'Verify Paystack payment by reference' })
+  verify(@Param('reference') reference: string) {
+    return firstValueFrom(this.paymentClient.send('PAYMENT_VERIFY', { reference }));
   }
 
   @Get(':id/status')

@@ -1,6 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/constants/crop_data.dart';
 import '../../../../core/network/api_client.dart';
@@ -35,9 +38,11 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen>
   final _distCtrl   = TextEditingController();
 
   CropInfo? _selectedCrop;
-  String    _unit     = 'KG';
+  String    _unit      = 'KG';
   String?   _region;
   bool      _isLoading = false;
+  File?     _pickedImage;
+  final _picker = ImagePicker();
 
   @override
   void initState() {
@@ -53,6 +58,74 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen>
     _descCtrl.dispose();
     _distCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final picked = await _picker.pickImage(
+      source: source,
+      imageQuality: 50,
+      maxWidth: 800,
+      maxHeight: 800,
+    );
+    if (picked != null) {
+      setState(() => _pickedImage = File(picked.path));
+    }
+  }
+
+  void _showImageSourceSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40, height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Text('Add Product Photo',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _SourceOption(
+                      icon: Icons.photo_library_outlined,
+                      label: 'Gallery',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickImage(ImageSource.gallery);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _SourceOption(
+                      icon: Icons.camera_alt_outlined,
+                      label: 'Camera',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickImage(ImageSource.camera);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _selectCrop(CropInfo crop) {
@@ -77,18 +150,25 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen>
     setState(() => _isLoading = true);
     try {
       final user = ref.read(authUserProvider).valueOrNull!;
+      List<String> images = [];
+      if (_pickedImage != null) {
+        final bytes = await _pickedImage!.readAsBytes();
+        final b64 = base64Encode(bytes);
+        images = ['data:image/jpeg;base64,$b64'];
+      }
+
       await ApiClient.instance.post(ApiConstants.products, data: {
         'farmerId':     user.id,
         'farmerName':   user.displayName,
         'name':         _selectedCrop!.name,
         'categoryName': _selectedCrop!.category,
-        'imageAsset':   _selectedCrop!.asset,
         'description':  _descCtrl.text.trim(),
         'quantity':     double.parse(_qtyCtrl.text),
         'unit':         _unit,
         'pricePerUnit': double.parse(_priceCtrl.text),
         if (_region != null) 'region': _region,
         if (_distCtrl.text.isNotEmpty) 'district': _distCtrl.text.trim(),
+        if (images.isNotEmpty) 'images': images,
       });
 
       if (mounted) {
@@ -158,59 +238,103 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen>
 
   Widget _selectedPreview() {
     final crop = _selectedCrop!;
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(15),
-              bottomLeft: Radius.circular(15),
-            ),
-            child: Image.asset(
-              crop.asset,
-              width: 110,
-              height: 90,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 110,
-                height: 90,
-                color: AppTheme.primary.withValues(alpha: 0.1),
-                child: const Icon(Icons.eco, size: 40, color: AppTheme.primary),
+    return Column(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: _showImageSourceSheet,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(15),
+                    bottomLeft: Radius.circular(15),
+                  ),
+                  child: Stack(
+                    children: [
+                      _pickedImage != null
+                          ? Image.file(_pickedImage!, width: 110, height: 90, fit: BoxFit.cover)
+                          : Image.asset(
+                              crop.asset,
+                              width: 110,
+                              height: 90,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: 110,
+                                height: 90,
+                                color: AppTheme.primary.withValues(alpha: 0.1),
+                                child: const Icon(Icons.eco, size: 40, color: AppTheme.primary),
+                              ),
+                            ),
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          color: Colors.black54,
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.camera_alt, color: Colors.white, size: 12),
+                              SizedBox(width: 4),
+                              Text('Change', style: TextStyle(color: Colors.white, fontSize: 10)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  crop.name,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      crop.name,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      crop.category,
+                      style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Suggested: GHS ${crop.basePrice.toStringAsFixed(2)}/${crop.unit}',
+                      style: TextStyle(fontSize: 12, color: AppTheme.primary.withValues(alpha: 0.8)),
+                    ),
+                    if (_pickedImage != null)
+                      const Text('Custom photo added ✓',
+                          style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.w500)),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  crop.category,
-                  style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Suggested: GHS ${crop.basePrice.toStringAsFixed(2)}/${crop.unit}',
-                  style: TextStyle(fontSize: 12, color: AppTheme.primary.withValues(alpha: 0.8)),
-                ),
-              ],
-            ),
+              ),
+              IconButton(
+                onPressed: () => setState(() => _selectedCrop = null),
+                icon: const Icon(Icons.close, size: 18, color: AppTheme.textSecondary),
+              ),
+            ],
           ),
-          IconButton(
-            onPressed: () => setState(() => _selectedCrop = null),
-            icon: const Icon(Icons.close, size: 18, color: AppTheme.textSecondary),
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: _showImageSourceSheet,
+          icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
+          label: Text(_pickedImage == null ? 'Add Your Own Photo' : 'Change Photo'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppTheme.primary,
+            side: BorderSide(color: AppTheme.primary.withValues(alpha: 0.4)),
+            minimumSize: const Size(double.infinity, 44),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -345,6 +469,34 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen>
                   ),
                 ),
               const SizedBox(height: 40),
+            ],
+          ),
+        ),
+      );
+}
+
+class _SourceOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _SourceOption({required this.icon, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          decoration: BoxDecoration(
+            color: AppTheme.primary.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, size: 32, color: AppTheme.primary),
+              const SizedBox(height: 8),
+              Text(label, style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w600)),
             ],
           ),
         ),

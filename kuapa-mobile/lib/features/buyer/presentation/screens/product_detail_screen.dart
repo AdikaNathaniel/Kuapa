@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/api_constants.dart';
-import '../../../../core/constants/crop_data.dart';
+import '../../../../shared/widgets/product_image.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/kuapa_button.dart';
 import '../../../../shared/widgets/error_view.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../reviews/presentation/providers/review_provider.dart';
 
 final _productDetailProvider =
     FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, id) async {
@@ -110,8 +111,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           final region     = p['region']?.toString();
           final district   = p['district']?.toString();
           final farmer     = p['farmerName']?.toString() ?? 'Farmer';
+          final farmerId   = p['farmerId']?.toString() ?? '';
           final desc       = p['description']?.toString() ?? '';
-          final assetPath  = CropData.assetFor(name);
+          final images = p['images'] as List?;
 
           return CustomScrollView(
             slivers: [
@@ -123,13 +125,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.asset(
-                        assetPath,
+                      ProductImage(
+                        productName: name,
+                        images: images,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          color: AppTheme.primary.withValues(alpha: 0.1),
-                          child: const Icon(Icons.eco, size: 100, color: AppTheme.primary),
-                        ),
                       ),
                       // Gradient for AppBar readability
                       DecoratedBox(
@@ -211,57 +210,82 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           const SizedBox(height: 20),
 
                           // Farmer card
-                          Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey.shade200),
-                            ),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 22,
-                                  backgroundColor: AppTheme.primary.withValues(alpha: 0.15),
-                                  child: const Icon(Icons.person, color: AppTheme.primary),
-                                ),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      farmer,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
-                                      ),
-                                    ),
-                                    const Text(
-                                      'Verified Farmer',
-                                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                                    ),
-                                  ],
-                                ),
-                                const Spacer(),
-                                const Icon(Icons.verified, size: 20, color: AppTheme.primary),
-                                const SizedBox(width: 4),
-                                _startingChat
-                                    ? const SizedBox(
-                                        width: 28,
-                                        height: 28,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: AppTheme.primary,
+                          Consumer(builder: (context, ref, _) {
+                            final reviewData = farmerId.isNotEmpty
+                                ? ref.watch(userReviewsProvider(farmerId))
+                                : null;
+                            final avg = reviewData?.whenOrNull(
+                              data: (d) => (d['averageRating'] as num?)?.toDouble() ?? 0.0,
+                            ) ?? 0.0;
+                            final total = reviewData?.whenOrNull(
+                              data: (d) => (d['total'] as num?)?.toInt() ?? 0,
+                            ) ?? 0;
+
+                            return Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey.shade200),
+                              ),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 22,
+                                    backgroundColor: AppTheme.primary.withValues(alpha: 0.15),
+                                    child: const Icon(Icons.person, color: AppTheme.primary),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          farmer,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                          ),
                                         ),
-                                      )
-                                    : IconButton(
-                                        icon: const Icon(Icons.chat_bubble_outline, color: AppTheme.primary),
-                                        tooltip: 'Chat with farmer',
-                                        onPressed: () => _startChat(p),
-                                      ),
-                              ],
-                            ),
-                          ),
+                                        if (avg > 0)
+                                          Row(
+                                            children: [
+                                              const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFFC107)),
+                                              const SizedBox(width: 3),
+                                              Text(
+                                                '${avg.toStringAsFixed(1)} ($total)',
+                                                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                                              ),
+                                            ],
+                                          )
+                                        else
+                                          const Text(
+                                            'Verified Farmer',
+                                            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(Icons.verified, size: 20, color: AppTheme.primary),
+                                  const SizedBox(width: 4),
+                                  _startingChat
+                                      ? const SizedBox(
+                                          width: 28,
+                                          height: 28,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: AppTheme.primary,
+                                          ),
+                                        )
+                                      : IconButton(
+                                          icon: const Icon(Icons.chat_bubble_outline, color: AppTheme.primary),
+                                          tooltip: 'Chat with farmer',
+                                          onPressed: () => _startChat(p),
+                                        ),
+                                ],
+                              ),
+                            );
+                          }),
 
                           if (desc.isNotEmpty) ...[
                             const SizedBox(height: 20),
@@ -278,6 +302,46 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 fontSize: 14,
                               ),
                             ),
+                          ],
+
+                          // Reviews section
+                          if (farmerId.isNotEmpty) ...[
+                            const SizedBox(height: 28),
+                            const Text(
+                              'Farmer Reviews',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            const SizedBox(height: 12),
+                            Consumer(builder: (context, ref, _) {
+                              final reviewData = ref.watch(userReviewsProvider(farmerId));
+                              return reviewData.when(
+                                loading: () => const Center(child: CircularProgressIndicator()),
+                                error: (_, __) => const SizedBox.shrink(),
+                                data: (d) {
+                                  final reviews = (d['reviews'] as List?) ?? [];
+                                  if (reviews.isEmpty) {
+                                    return Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade50,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.grey.shade200),
+                                      ),
+                                      child: const Center(
+                                        child: Text(
+                                          'No reviews yet — be the first!',
+                                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  final shown = reviews.take(3).toList();
+                                  return Column(
+                                    children: shown.map<Widget>((r) => _ReviewTile(review: r as Map<String, dynamic>)).toList(),
+                                  );
+                                },
+                              );
+                            }),
                           ],
 
                           const SizedBox(height: 28),
@@ -396,6 +460,60 @@ class _InfoChip extends StatelessWidget {
           ],
         ),
       );
+}
+
+class _ReviewTile extends StatelessWidget {
+  final Map<String, dynamic> review;
+  const _ReviewTile({required this.review});
+
+  @override
+  Widget build(BuildContext context) {
+    final rating = (review['rating'] as num?)?.toInt() ?? 0;
+    final comment = review['comment']?.toString() ?? '';
+    final reviewer = review['reviewerName']?.toString() ?? 'User';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: AppTheme.primary.withValues(alpha: 0.12),
+                child: Text(
+                  reviewer.isNotEmpty ? reviewer[0].toUpperCase() : 'U',
+                  style: const TextStyle(fontSize: 12, color: AppTheme.primary, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(reviewer, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              ),
+              Row(
+                children: List.generate(5, (i) => Icon(
+                  i < rating ? Icons.star_rounded : Icons.star_outline_rounded,
+                  size: 14,
+                  color: i < rating ? const Color(0xFFFFC107) : Colors.grey.shade300,
+                )),
+              ),
+            ],
+          ),
+          if (comment.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(comment, style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary, height: 1.5)),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 class _QtyButton extends StatelessWidget {

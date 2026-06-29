@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+
+node_modules/
+dist/
+*.js.map
+
+logs/
+*.log
+
+.DS_Store
+.idea/
+
+# Seed scripts contain hard-coded credentials
+**/seed.js
+**/seed.ts

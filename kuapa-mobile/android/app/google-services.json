@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "181126630901",
+    "project_id": "kuapa-aa25b",
+    "storage_bucket": "kuapa-aa25b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:181126630901:android:e9c59b94b561759efaa4bc",
+        "android_client_info": {
+          "package_name": "com.example.kuapa"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfepTqBqRgAGZW4NYBqfHDZtw6m0mDjrc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

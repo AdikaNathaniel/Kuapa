@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/api_constants.dart';
-import '../../../../core/constants/crop_data.dart';
+import '../../../../shared/widgets/product_image.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/error_view.dart';
@@ -158,7 +158,7 @@ class _ListingCardState extends State<_ListingCard> {
     final unit      = widget.product['unit']?.toString() ?? '';
     final price     = widget.product['pricePerUnit']?.toString() ?? '0';
     final region    = widget.product['region']?.toString();
-    final assetPath = CropData.assetFor(name);
+    final images = widget.product['images'] as List?;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
@@ -174,15 +174,10 @@ class _ListingCardState extends State<_ListingCard> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.asset(
-                  assetPath,
+                ProductImage(
+                  productName: name,
+                  images: images,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: AppTheme.primary.withValues(alpha: 0.1),
-                    child: const Center(
-                      child: Icon(Icons.eco, size: 56, color: AppTheme.primary),
-                    ),
-                  ),
                 ),
                 Positioned.fill(
                   child: DecoratedBox(
@@ -384,8 +379,9 @@ class _EditInventorySheetState extends State<_EditInventorySheet> {
 
   @override
   Widget build(BuildContext context) {
-    final name = widget.product['name']?.toString() ?? '';
-    final unit = widget.product['unit']?.toString() ?? '';
+    final name   = widget.product['name']?.toString() ?? '';
+    final unit   = widget.product['unit']?.toString() ?? '';
+    final images = widget.product['images'] as List?;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -415,15 +411,13 @@ class _EditInventorySheetState extends State<_EditInventorySheet> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  CropData.assetFor(name),
-                  width: 48, height: 48,
+                child: ProductImage(
+                  productName: name,
+                  images: images,
+                  width: 48,
+                  height: 48,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    width: 48, height: 48,
-                    color: AppTheme.primary.withValues(alpha: 0.1),
-                    child: const Icon(Icons.eco, color: AppTheme.primary),
-                  ),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
               const SizedBox(width: 12),

@@ -40,6 +40,11 @@ export class NotificationsController {
     return this.notificationsService.markRead(data.id);
   }
 
+  @MessagePattern('NOTIFICATION_MARK_ALL_READ')
+  tcpMarkAllRead(@Payload() data: { userId: string }) {
+    return this.notificationsService.markAllRead(data.userId);
+  }
+
   @MessagePattern('NOTIFICATION_REGISTER_FCM')
   tcpRegisterFcm(@Payload() data: { userId: string; token: string; deviceType: string }) {
     return this.notificationsService.registerFcmToken(data.userId, data.token, data.deviceType);

@@ -28,7 +28,7 @@ class CropData {
     // Vegetables
     CropInfo(
       name: 'Tomato',
-      asset: '$_base/vegetables/tomato/tomato_1.jpg',
+      asset: '$_base/vegetables/tomato/tomato_9.jpg',
       assets: [],
       unit: 'kg',
       basePrice: 8.50,
@@ -68,7 +68,7 @@ class CropData {
     ),
     CropInfo(
       name: 'Carrot',
-      asset: '$_base/vegetables/carrot/carrot_1.jpg',
+      asset: '$_base/vegetables/carrot/carrot_3.jpg',
       assets: [],
       unit: 'kg',
       basePrice: 7.50,

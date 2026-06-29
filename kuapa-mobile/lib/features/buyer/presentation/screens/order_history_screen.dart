@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -124,9 +126,33 @@ class _BuyerOrderCard extends StatefulWidget {
   State<_BuyerOrderCard> createState() => _BuyerOrderCardState();
 }
 
-class _BuyerOrderCardState extends State<_BuyerOrderCard> {
-  bool _cancelling = false;
-  bool _paying     = false;
+class _BuyerOrderCardState extends State<_BuyerOrderCard> with WidgetsBindingObserver {
+  bool _cancelling  = false;
+  bool _paying      = false;
+  bool _verifying   = false;
+  String? _pendingRef;
+  bool _awaitingReturn = false; // true while user is in the Paystack browser
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // When user returns from Paystack browser, auto-verify
+    if (state == AppLifecycleState.resumed && _awaitingReturn && _pendingRef != null) {
+      _awaitingReturn = false;
+      _verifyPayment();
+    }
+  }
 
   Color _statusColor(String s) => switch (s) {
     'PENDING'          => Colors.orange,
@@ -196,29 +222,75 @@ class _BuyerOrderCardState extends State<_BuyerOrderCard> {
   Future<void> _initiatePayment() async {
     setState(() => _paying = true);
     try {
-      await ApiClient.instance.post(ApiConstants.initiatePayment, data: {
+      final res = await ApiClient.instance.post(ApiConstants.initiatePayment, data: {
         'orderId': widget.order['id'],
         'amount':  widget.order['totalAmount'],
         'method':  'MTN_MOBILE_MONEY',
       });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Payment initiated — you will receive a prompt shortly'),
-            backgroundColor: AppTheme.primary,
-            duration: Duration(seconds: 4),
-          ),
-        );
-        widget.onRefresh();
+
+      final authUrl = res.data['authorizationUrl'] as String?;
+      final ref     = res.data['transactionRef'] as String?;
+
+      if (authUrl != null && authUrl.isNotEmpty) {
+        final uri = Uri.parse(authUrl);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          if (mounted) {
+            setState(() {
+              _pendingRef = ref;
+              _awaitingReturn = true;
+            });
+          }
+        } else {
+          throw Exception('Could not open payment page');
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Payment failed: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Payment error: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
       if (mounted) setState(() => _paying = false);
+    }
+  }
+
+  Future<void> _verifyPayment() async {
+    if (_pendingRef == null) return;
+    setState(() => _verifying = true);
+    try {
+      final res = await ApiClient.instance.get('${ApiConstants.verifyPayment}/$_pendingRef');
+      final status = res.data['status'] as String?;
+
+      if (mounted) {
+        if (status == 'COMPLETED') {
+          setState(() => _pendingRef = null);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Payment confirmed!'), backgroundColor: Colors.green),
+          );
+          widget.onRefresh();
+        } else if (status == 'FAILED') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Payment failed. Please try again.'), backgroundColor: Colors.red),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Payment still processing — tap again in a moment'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Verification error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _verifying = false);
     }
   }
 
@@ -415,6 +487,49 @@ class _BuyerOrderCardState extends State<_BuyerOrderCard> {
                         ),
                     ],
                   ),
+                  // Shown after browser returns — lets user confirm payment landed
+                  if (_pendingRef != null) ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _verifying ? null : _verifyPayment,
+                        icon: _verifying
+                            ? const SizedBox(
+                                width: 14, height: 14,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Icon(Icons.check_circle_outline, size: 16),
+                        label: const Text('Check Payment Status'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (status == 'DELIVERED') ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => context.push('/reviews/write', extra: {
+                          'revieweeId': widget.order['farmerId']?.toString() ?? '',
+                          'revieweeName': widget.order['farmerName']?.toString() ?? 'Farmer',
+                          'revieweeType': 'FARMER',
+                          'orderId': widget.order['id']?.toString(),
+                        }),
+                        icon: const Icon(Icons.star_outline_rounded, size: 16),
+                        label: const Text('Review Farmer'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFFFC107),
+                          side: const BorderSide(color: Color(0xFFFFC107)),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ],
             ),

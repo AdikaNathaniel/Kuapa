@@ -24,6 +24,9 @@ export class Payment {
   @Prop({ required: true })
   payerId: string;
 
+  @Prop()
+  payerEmail: string;
+
   @Prop({ type: Number, required: true })
   amount: number;
 
@@ -41,6 +44,9 @@ export class Payment {
 
   @Prop()
   providerRef: string;
+
+  @Prop()
+  authorizationUrl: string;
 
   @Prop()
   phoneNumber: string;
