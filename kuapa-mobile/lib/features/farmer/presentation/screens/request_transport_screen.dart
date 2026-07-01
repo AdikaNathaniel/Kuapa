@@ -119,7 +119,7 @@ class _RequestTransportScreenState extends ConsumerState<RequestTransportScreen>
     if (!_formKey.currentState!.validate()) return;
     if (_pickup == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please pick a pickup location on the map'), backgroundColor: Colors.orange),
+        const SnackBar(content: Text('Please pick a pickup location on the map'), backgroundColor: AppTheme.primary),
       );
       return;
     }
@@ -280,9 +280,9 @@ class _RequestTransportScreenState extends ConsumerState<RequestTransportScreen>
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade50,
+                    color: AppTheme.primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.green.shade200),
+                    border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -292,7 +292,7 @@ class _RequestTransportScreenState extends ConsumerState<RequestTransportScreen>
                         Text('${_estimate!['distanceKm']} km',
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       ]),
-                      Container(width: 1, height: 36, color: Colors.green.shade200),
+                      Container(width: 1, height: 36, color: AppTheme.primary.withValues(alpha: 0.3)),
                       Column(children: [
                         const Text('Est. Cost', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
                         Text('GHS ${_estimate!['estimatedCost']}',

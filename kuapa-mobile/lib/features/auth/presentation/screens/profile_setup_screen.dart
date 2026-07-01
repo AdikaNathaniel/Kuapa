@@ -1,9 +1,11 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../../shared/widgets/kuapa_button.dart';
 import '../../../../shared/widgets/kuapa_text_field.dart';
 import '../../data/models/auth_models.dart';
@@ -71,6 +73,19 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     UserRole.ADMIN       => '/farmer/dashboard',
   };
 
+  /// Returns true if the error signals that a profile already exists.
+  bool _isConflict(Object e) {
+    if (e is DioException) {
+      final status = e.response?.statusCode;
+      if (status == 409) return true;
+      final msg = e.response?.data?.toString().toLowerCase() ?? '';
+      if (msg.contains('already') || msg.contains('conflict') || msg.contains('duplicate')) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -85,40 +100,85 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         if (_region != null) 'region': _region,
       };
 
-      final String endpoint;
+      final String postEndpoint;
+      final String patchEndpoint;
+
       switch (user.role) {
         case UserRole.FARMER:
-          endpoint = ApiConstants.farmerProfile;
-          if (_farmNameCtrl.text.isNotEmpty) { body['farmName'] = _farmNameCtrl.text.trim(); }
-          if (_districtCtrl.text.isNotEmpty) { body['district'] = _districtCtrl.text.trim(); }
-          if (_bioCtrl.text.isNotEmpty)      { body['bio'] = _bioCtrl.text.trim(); }
-          if (_selectedCrops.isNotEmpty)     { body['mainCrops'] = _selectedCrops; }
+          postEndpoint  = ApiConstants.farmerProfile;
+          patchEndpoint = ApiConstants.farmerProfile;
+          if (_farmNameCtrl.text.isNotEmpty) body['farmName']  = _farmNameCtrl.text.trim();
+          if (_districtCtrl.text.isNotEmpty) body['district']  = _districtCtrl.text.trim();
+          if (_bioCtrl.text.isNotEmpty)      body['bio']       = _bioCtrl.text.trim();
+          if (_selectedCrops.isNotEmpty)     body['mainCrops'] = _selectedCrops;
 
         case UserRole.BUYER:
-          endpoint = ApiConstants.buyerProfile;
-          if (_businessNameCtrl.text.isNotEmpty) { body['businessName'] = _businessNameCtrl.text.trim(); }
-          if (_businessType != null)             { body['businessType'] = _businessType; }
-          if (_addressCtrl.text.isNotEmpty)      { body['address'] = _addressCtrl.text.trim(); }
+          postEndpoint  = ApiConstants.buyerProfile;
+          patchEndpoint = ApiConstants.buyerProfile;
+          if (_businessNameCtrl.text.isNotEmpty) body['businessName'] = _businessNameCtrl.text.trim();
+          if (_businessType != null)             body['businessType'] = _businessType;
+          if (_addressCtrl.text.isNotEmpty)      body['address']      = _addressCtrl.text.trim();
 
         case UserRole.TRANSPORTER:
-          endpoint = ApiConstants.transporterProfile;
-          if (_vehicleType != null)             { body['vehicleType'] = _vehicleType; }
-          if (_vehicleNumCtrl.text.isNotEmpty)  { body['vehicleNumber'] = _vehicleNumCtrl.text.trim(); }
+          postEndpoint  = ApiConstants.transporterProfile;
+          patchEndpoint = ApiConstants.transporterProfile;
+          if (_vehicleType != null)            body['vehicleType']   = _vehicleType;
+          if (_vehicleNumCtrl.text.isNotEmpty) body['vehicleNumber'] = _vehicleNumCtrl.text.trim();
           final cap = double.tryParse(_capacityCtrl.text);
-          if (cap != null)                      { body['capacityKg'] = cap; }
+          if (cap != null)                     body['capacityKg']   = cap;
 
         case UserRole.ADMIN:
-          endpoint = ApiConstants.farmerProfile;
+          postEndpoint  = ApiConstants.farmerProfile;
+          patchEndpoint = ApiConstants.farmerProfile;
       }
 
-      await ApiClient.instance.post(endpoint, data: body);
+      // Attempt to create the profile; if it already exists, update instead.
+      try {
+        await ApiClient.instance.post(postEndpoint, data: body);
+      } catch (createErr) {
+        if (_isConflict(createErr)) {
+          // Profile already exists — update it instead.
+          await ApiClient.instance.patch(patchEndpoint, data: body);
+        } else {
+          rethrow;
+        }
+      }
 
-      if (mounted) { context.go(_dashboardFor(user.role)); }
+      if (!mounted) return;
+      _showSnackbar('Profile saved successfully!', isError: false);
+      context.go(_dashboardFor(user.role));
     } catch (e) {
-      setState(() => _error = e.toString().replaceAll('DioException', '').trim());
+      final msg = parseApiError(e);
+      if (mounted) {
+        setState(() => _error = msg);
+        _showSnackbar(msg, isError: true);
+      }
     } finally {
-      if (mounted) { setState(() => _isLoading = false); }
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _showSnackbar(String message, {required bool isError}) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isError ? Icons.error_outline : Icons.check_circle_outline,
+              color: Colors.white,
+              size: 18,
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Text(message, style: const TextStyle(fontSize: 13))),
+          ],
+        ),
+        backgroundColor: isError ? Colors.red.shade700 : AppTheme.primary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: Duration(seconds: isError ? 5 : 2),
+      ),
+    );
   }
 
   void _skip() {
@@ -149,7 +209,12 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           const SizedBox(height: 16),
           KuapaTextField(label: 'District', controller: _districtCtrl, prefixIcon: Icons.map_outlined),
           const SizedBox(height: 16),
-          KuapaTextField(label: 'About your farm (bio)', controller: _bioCtrl, prefixIcon: Icons.info_outline, maxLines: 3),
+          KuapaTextField(
+            label: 'About your farm (bio)',
+            controller: _bioCtrl,
+            prefixIcon: Icons.info_outline,
+            maxLines: 3,
+          ),
           const SizedBox(height: 16),
           const Text('Main Crops', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
           const SizedBox(height: 8),
@@ -161,21 +226,19 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               return FilterChip(
                 label: Text(
                   crop,
-                  style: TextStyle(fontSize: 12, color: selected ? Colors.white : AppTheme.textPrimary),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: selected ? Colors.white : AppTheme.textPrimary,
+                  ),
                 ),
                 selected: selected,
                 selectedColor: AppTheme.primary,
                 backgroundColor: Colors.grey.shade100,
                 checkmarkColor: Colors.white,
-                onSelected: (v) {
-                  setState(() {
-                    if (v) {
-                      _selectedCrops.add(crop);
-                    } else {
-                      _selectedCrops.remove(crop);
-                    }
-                  });
-                },
+                onSelected: (v) => setState(() {
+                  if (v) { _selectedCrops.add(crop); }
+                  else   { _selectedCrops.remove(crop); }
+                }),
               );
             }).toList(),
           ),
@@ -263,7 +326,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         automaticallyImplyLeading: false,
         actions: [
           TextButton(
-            onPressed: _skip,
+            onPressed: _isLoading ? null : _skip,
             child: const Text('Skip for now'),
           ),
         ],
@@ -275,6 +338,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Role banner
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -306,18 +370,21 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               ),
               const SizedBox(height: 24),
 
+              // Full name — required for all roles
               KuapaTextField(
                 label: 'Full Name',
                 controller: _fullNameCtrl,
                 prefixIcon: Icons.person_outline,
-                validator: (v) => (v == null || v.isEmpty) ? 'Full name is required' : null,
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Full name is required' : null,
               ),
               const SizedBox(height: 16),
 
+              // Role-specific fields
               if (user.role == UserRole.FARMER)      _farmerFields(),
               if (user.role == UserRole.BUYER)       _buyerFields(),
               if (user.role == UserRole.TRANSPORTER) _transporterFields(),
 
+              // Inline error (also shown in snackbar)
               if (_error != null) ...[
                 const SizedBox(height: 16),
                 Container(
@@ -325,6 +392,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                   decoration: BoxDecoration(
                     color: Colors.red.shade50,
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.shade200),
                   ),
                   child: Row(
                     children: [
@@ -342,11 +410,15 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               ],
 
               const SizedBox(height: 28),
-              KuapaButton(label: 'Save Profile', onPressed: _submit, isLoading: _isLoading),
+              KuapaButton(
+                label: 'Save Profile',
+                onPressed: _isLoading ? null : _submit,
+                isLoading: _isLoading,
+              ),
               const SizedBox(height: 12),
               Center(
                 child: TextButton(
-                  onPressed: _skip,
+                  onPressed: _isLoading ? null : _skip,
                   child: const Text(
                     'Skip and set up later',
                     style: TextStyle(color: AppTheme.textSecondary),

@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -33,7 +34,17 @@ export class AuthService {
     if (existing) throw new ConflictException('User already exists');
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
-    const saved = await new this.userModel({ ...dto, passwordHash }).save();
+
+    let saved;
+    try {
+      saved = await new this.userModel({ ...dto, passwordHash }).save();
+    } catch (err: any) {
+      if (err.code === 11000) {
+        const field = Object.keys(err.keyPattern ?? {})[0] ?? 'field';
+        throw new ConflictException(`An account with this ${field} already exists`);
+      }
+      throw new InternalServerErrorException('Could not create account. Please try again.');
+    }
 
     return this.buildTokens(saved);
   }

@@ -355,7 +355,7 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text('Clear all', style: TextStyle(color: Colors.red, fontSize: 12)),
+                    child: const Text('Clear all', style: TextStyle(color: AppTheme.primary, fontSize: 12)),
                   ),
                 ],
               ),

@@ -223,7 +223,7 @@ class _RequestCardState extends State<_RequestCard> {
         'ACCEPTED'   => AppTheme.primary,
         'PICKED_UP'  => AppTheme.primaryLight,
         'IN_TRANSIT' => AppTheme.primary,
-        'DELIVERED'  => Colors.green,
+        'DELIVERED'  => AppTheme.primary,
         'CANCELLED'  => Colors.red,
         _            => Colors.grey,
       };
@@ -297,17 +297,17 @@ class _RequestCardState extends State<_RequestCard> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.green.shade50,
+                  color: AppTheme.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.green.shade200),
+                  border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.location_on, size: 12, color: Colors.green),
+                    Icon(Icons.location_on, size: 12, color: AppTheme.primary),
                     SizedBox(width: 4),
                     Text('Sharing GPS location',
-                        style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.w500)),
+                        style: TextStyle(fontSize: 11, color: AppTheme.primary, fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),

@@ -155,14 +155,14 @@ class _BuyerOrderCardState extends State<_BuyerOrderCard> with WidgetsBindingObs
   }
 
   Color _statusColor(String s) => switch (s) {
-    'PENDING'          => Colors.orange,
+    'PENDING'          => AppTheme.primaryLight,
     'CONFIRMED'        => AppTheme.primaryLight,
     'PROCESSING'       => AppTheme.primary,
     'READY_FOR_PICKUP' => AppTheme.primaryLight,
     'IN_TRANSIT'       => AppTheme.primary,
-    'DELIVERED'        => Colors.green,
+    'DELIVERED'        => AppTheme.primary,
     'CANCELLED'        => Colors.red,
-    'DISPUTED'         => Colors.deepOrange,
+    'DISPUTED'         => Colors.red,
     _                  => Colors.grey,
   };
 
@@ -267,7 +267,7 @@ class _BuyerOrderCardState extends State<_BuyerOrderCard> with WidgetsBindingObs
         if (status == 'COMPLETED') {
           setState(() => _pendingRef = null);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Payment confirmed!'), backgroundColor: Colors.green),
+            const SnackBar(content: Text('Payment confirmed!'), backgroundColor: AppTheme.primary),
           );
           widget.onRefresh();
         } else if (status == 'FAILED') {
@@ -278,7 +278,7 @@ class _BuyerOrderCardState extends State<_BuyerOrderCard> with WidgetsBindingObs
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Payment still processing — tap again in a moment'),
-              backgroundColor: Colors.orange,
+              backgroundColor: AppTheme.primary,
             ),
           );
         }
@@ -407,8 +407,8 @@ class _BuyerOrderCardState extends State<_BuyerOrderCard> with WidgetsBindingObs
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: isPaid
-                            ? Colors.green.withValues(alpha: 0.1)
-                            : Colors.orange.withValues(alpha: 0.1),
+                            ? AppTheme.primary.withValues(alpha: 0.1)
+                            : AppTheme.primaryLight.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -417,14 +417,14 @@ class _BuyerOrderCardState extends State<_BuyerOrderCard> with WidgetsBindingObs
                           Icon(
                             isPaid ? Icons.check_circle : Icons.pending_outlined,
                             size: 12,
-                            color: isPaid ? Colors.green : Colors.orange,
+                            color: isPaid ? AppTheme.primary : AppTheme.primaryLight,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             isPaid ? 'Paid' : 'Payment Pending',
                             style: TextStyle(
                               fontSize: 11,
-                              color: isPaid ? Colors.green : Colors.orange,
+                              color: isPaid ? AppTheme.primary : AppTheme.primaryLight,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -502,7 +502,7 @@ class _BuyerOrderCardState extends State<_BuyerOrderCard> with WidgetsBindingObs
                             : const Icon(Icons.check_circle_outline, size: 16),
                         label: const Text('Check Payment Status'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
+                          backgroundColor: AppTheme.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 10),
                         ),
@@ -523,8 +523,8 @@ class _BuyerOrderCardState extends State<_BuyerOrderCard> with WidgetsBindingObs
                         icon: const Icon(Icons.star_outline_rounded, size: 16),
                         label: const Text('Review Farmer'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFFFFC107),
-                          side: const BorderSide(color: Color(0xFFFFC107)),
+                          foregroundColor: AppTheme.primary,
+                          side: const BorderSide(color: AppTheme.primary),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                         ),
                       ),
@@ -635,10 +635,10 @@ class _TransactionTile extends StatelessWidget {
   const _TransactionTile({required this.txn});
 
   Color _statusColor(String s) => switch (s) {
-    'COMPLETED'  => Colors.green,
-    'PROCESSING' => Colors.orange,
+    'COMPLETED'  => AppTheme.primary,
+    'PROCESSING' => AppTheme.primaryLight,
     'FAILED'     => Colors.red,
-    'REFUNDED'   => Colors.purple,
+    'REFUNDED'   => AppTheme.primaryLight,
     _            => Colors.grey,
   };
 

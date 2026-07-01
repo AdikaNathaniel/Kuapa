@@ -98,8 +98,8 @@ class _NotifTile extends StatelessWidget {
   Color _color(String? type) => switch (type) {
         'ORDER'     => AppTheme.primaryLight,
         'TRANSPORT' => AppTheme.primary,
-        'MESSAGE'   => Colors.blue,
-        'PAYMENT'   => Colors.green,
+        'MESSAGE'   => AppTheme.primary,
+        'PAYMENT'   => AppTheme.primary,
         _           => Colors.grey,
       };
 

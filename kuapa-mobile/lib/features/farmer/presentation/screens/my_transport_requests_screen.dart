@@ -116,11 +116,11 @@ class _TransportCard extends StatelessWidget {
   };
 
   Color _statusColor(String status) => switch (status) {
-    'PENDING'    => Colors.orange,
+    'PENDING'    => AppTheme.primaryLight,
     'ACCEPTED'   => AppTheme.primaryLight,
     'PICKED_UP'  => AppTheme.primary,
     'IN_TRANSIT' => AppTheme.primary,
-    'DELIVERED'  => Colors.green,
+    'DELIVERED'  => AppTheme.primary,
     'CANCELLED'  => Colors.red,
     _            => Colors.grey,
   };
@@ -305,8 +305,8 @@ class _TransportCard extends StatelessWidget {
                       icon: const Icon(Icons.star_outline_rounded, size: 16),
                       label: const Text('Review Transporter'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFFFC107),
-                        side: const BorderSide(color: Color(0xFFFFC107)),
+                        foregroundColor: AppTheme.primary,
+                        side: const BorderSide(color: AppTheme.primary),
                       ),
                     ),
                   ),

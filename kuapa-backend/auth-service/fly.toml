@@ -4,6 +4,22 @@ primary_region = "lhr"
 [build]
   dockerfile = "Dockerfile"
 
+[env]
+  HTTP_PORT = "3001"
+  TCP_PORT = "4001"
+  NODE_ENV = "production"
+  JWT_EXPIRY = "15m"
+  JWT_REFRESH_EXPIRY = "30d"
+  MONGODB_URI = "mongodb+srv://nathanieladikajnr_db_user:QFXR8xBkP7zTmJ7l@cluster0.jpqrsve.mongodb.net/kuapa?appName=Cluster0"
+  JWT_SECRET = "kuapa_jwt_secret_prod_2026"
+  JWT_REFRESH_SECRET = "kuapa_refresh_secret_prod_2026"
+
+[http_service]
+  internal_port = 3001
+  force_https = false
+  auto_stop_machines = false
+  min_machines_running = 1
+
 [[vm]]
   memory = "512mb"
   cpu_kind = "shared"

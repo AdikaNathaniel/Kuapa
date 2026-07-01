@@ -128,11 +128,11 @@ class _DeliveryCard extends StatelessWidget {
   };
 
   Color _statusColor(String s) => switch (s) {
-    'PENDING'    => Colors.orange,
+    'PENDING'    => AppTheme.primaryLight,
     'ACCEPTED'   => AppTheme.primaryLight,
     'PICKED_UP'  => AppTheme.primary,
     'IN_TRANSIT' => AppTheme.primary,
-    'DELIVERED'  => Colors.green,
+    'DELIVERED'  => AppTheme.primary,
     'CANCELLED'  => Colors.red,
     _            => Colors.grey,
   };

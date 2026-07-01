@@ -250,7 +250,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                         if (avg > 0)
                                           Row(
                                             children: [
-                                              const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFFC107)),
+                                              const Icon(Icons.star_rounded, size: 14, color: AppTheme.primary),
                                               const SizedBox(width: 3),
                                               Text(
                                                 '${avg.toStringAsFixed(1)} ($total)',
@@ -501,7 +501,7 @@ class _ReviewTile extends StatelessWidget {
                 children: List.generate(5, (i) => Icon(
                   i < rating ? Icons.star_rounded : Icons.star_outline_rounded,
                   size: 14,
-                  color: i < rating ? const Color(0xFFFFC107) : Colors.grey.shade300,
+                  color: i < rating ? AppTheme.primary : Colors.grey.shade300,
                 )),
               ),
             ],

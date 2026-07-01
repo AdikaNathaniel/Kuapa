@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../../shared/widgets/kuapa_button.dart';
 import '../../../../shared/widgets/kuapa_text_field.dart';
 import '../../data/models/auth_models.dart';
@@ -106,7 +107,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authUserProvider);
     final isLoading = authState.isLoading;
-    final error = authState.hasError ? authState.error.toString() : null;
+    final errorMsg  = authState.hasError ? parseApiError(authState.error) : null;
+
+    // Show a snackbar whenever the auth state transitions to an error
+    ref.listen<AsyncValue<AuthUser?>>(authUserProvider, (prev, next) {
+      if (next.hasError && !(prev?.hasError ?? false)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    parseApiError(next.error),
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(title: const Text('Create Account')),
@@ -197,7 +224,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 validator: (v) => v != _passwordController.text ? 'Passwords do not match' : null,
               ),
 
-              if (error != null) ...[
+              if (errorMsg != null) ...[
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -206,7 +233,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     children: [
                       const Icon(Icons.error_outline, color: Colors.red, size: 18),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(error, style: const TextStyle(color: Colors.red, fontSize: 13))),
+                      Expanded(child: Text(errorMsg, style: const TextStyle(color: Colors.red, fontSize: 13))),
                     ],
                   ),
                 ),

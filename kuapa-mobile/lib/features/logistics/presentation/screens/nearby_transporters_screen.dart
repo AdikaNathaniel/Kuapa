@@ -144,6 +144,7 @@ class _NearbyTransportersScreenState extends ConsumerState<NearbyTransportersScr
     final transportersAsync = ref.watch(_nearbyTransportersProvider(_center!));
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Nearby Transporters'),
         actions: [
@@ -173,8 +174,11 @@ class _NearbyTransportersScreenState extends ConsumerState<NearbyTransportersScr
         ),
         data: (transporters) => Column(
           children: [
-            Expanded(flex: 3, child: _buildMap(transporters)),
-            _BottomPanel(transporters: transporters),
+            Expanded(child: _buildMap(transporters)),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 300),
+              child: _BottomPanel(transporters: transporters),
+            ),
           ],
         ),
       ),
@@ -203,6 +207,8 @@ class _BottomPanel extends StatelessWidget {
     final withLocation = transporters.where((t) => t['currentLat'] != null).toList();
     final withoutLocation = transporters.where((t) => t['currentLat'] == null).toList();
     final sorted = [...withLocation, ...withoutLocation];
+
+    final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return Container(
       decoration: BoxDecoration(
@@ -240,7 +246,7 @@ class _BottomPanel extends StatelessWidget {
           ),
           if (sorted.isEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              padding: EdgeInsets.fromLTRB(24, 0, 24, 16 + bottomInset),
               child: Column(
                 children: [
                   Icon(Icons.local_shipping_outlined, size: 48, color: Colors.grey.shade400),
@@ -255,15 +261,15 @@ class _BottomPanel extends StatelessWidget {
             )
           else
             SizedBox(
-              height: 156,
+              height: 180,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                padding: EdgeInsets.fromLTRB(16, 8, 16, 8 + bottomInset),
                 itemCount: sorted.length,
                 itemBuilder: (_, i) => _TransporterCard(t: sorted[i]),
               ),
             ),
-          const SizedBox(height: 4),
+          if (sorted.isNotEmpty) SizedBox(height: bottomInset > 0 ? 0 : 8),
         ],
       ),
     );
@@ -301,6 +307,7 @@ class _TransporterCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
@@ -322,7 +329,7 @@ class _TransporterCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Row(children: [
-            const Icon(Icons.star, size: 12, color: Colors.amber),
+            const Icon(Icons.star, size: 12, color: AppTheme.primary),
             const SizedBox(width: 2),
             Text(rating.toStringAsFixed(1), style: const TextStyle(fontSize: 11)),
           ]),

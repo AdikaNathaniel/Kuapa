@@ -154,7 +154,7 @@ class _DeliveryTrackingScreenState extends State<DeliveryTrackingScreen> {
       polylines.add(Polyline(
         polylineId: const PolylineId('progress'),
         points: [LatLng(transporterLat, transporterLng!), LatLng(deliveryLat, deliveryLng!)],
-        color: Colors.blue.shade400,
+        color: AppTheme.primaryLight,
         width: 2,
         patterns: [PatternItem.dot, PatternItem.gap(6)],
       ));
@@ -241,11 +241,11 @@ class _InfoPanel extends StatelessWidget {
   });
 
   Color _statusColor(String s) => switch (s) {
-        'PENDING'    => Colors.orange,
+        'PENDING'    => AppTheme.primaryLight,
         'ACCEPTED'   => AppTheme.primaryLight,
         'PICKED_UP'  => AppTheme.primary,
         'IN_TRANSIT' => AppTheme.primary,
-        'DELIVERED'  => Colors.green,
+        'DELIVERED'  => AppTheme.primary,
         'CANCELLED'  => Colors.red,
         _            => Colors.grey,
       };
@@ -263,6 +263,7 @@ class _InfoPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMoving = status == 'IN_TRANSIT' || status == 'PICKED_UP';
+    final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return Container(
       decoration: BoxDecoration(
@@ -272,7 +273,7 @@ class _InfoPanel extends StatelessWidget {
           BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, -2)),
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+      padding: EdgeInsets.fromLTRB(16, 14, 16, 16 + bottomInset),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -312,7 +312,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen>
                     ),
                     if (_pickedImage != null)
                       const Text('Custom photo added ✓',
-                          style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.w500)),
+                          style: TextStyle(fontSize: 11, color: AppTheme.primary, fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),

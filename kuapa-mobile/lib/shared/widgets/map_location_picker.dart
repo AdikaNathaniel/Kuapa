@@ -110,6 +110,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                 ),
         ],
       ),
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           GoogleMap(
@@ -161,7 +162,9 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
           Positioned(
             left: 16,
             right: 16,
-            bottom: 24,
+            bottom: MediaQuery.of(context).padding.bottom +
+                MediaQuery.of(context).viewInsets.bottom +
+                16,
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(

@@ -42,15 +42,15 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
       };
 
   Color _typeColor() => switch (widget.revieweeType) {
-        'TRANSPORTER' => Colors.blue,
-        'BUYER' => Colors.purple,
+        'TRANSPORTER' => AppTheme.primary,
+        'BUYER' => AppTheme.primaryLight,
         _ => AppTheme.primary,
       };
 
   Future<void> _submit() async {
     if (_rating == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a star rating'), backgroundColor: Colors.orange),
+        const SnackBar(content: Text('Please select a star rating'), backgroundColor: AppTheme.primary),
       );
       return;
     }
@@ -147,7 +147,7 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
                     child: Icon(
                       filled ? Icons.star_rounded : Icons.star_outline_rounded,
                       size: 48,
-                      color: filled ? const Color(0xFFFFC107) : Colors.grey.shade300,
+                      color: filled ? AppTheme.primary : Colors.grey.shade300,
                     ),
                   ),
                 );
@@ -159,7 +159,7 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
                   ? 'Tap to rate'
                   : ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][_rating],
               style: TextStyle(
-                color: _rating == 0 ? Colors.grey : const Color(0xFFFFC107),
+                color: _rating == 0 ? Colors.grey : AppTheme.primary,
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),
